@@ -1,0 +1,3168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Microservices — Learn from Scratch (EN)</title>
+<style>
+:root{
+  --bg:#0d0f18;--surface:#161926;--surface2:#1e2235;--border:#272b40;
+  --primary:#7c9dff;--primary-dim:#3a4d99;--accent:#52dbb0;--accent2:#f9a74b;
+  --danger:#ff6b6b;--text:#dde3f5;--text-dim:#7a82a8;--code-bg:#0a0c15;
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.75;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+.app{display:flex;min-height:100vh;}
+
+.sidebar{
+  width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;
+}
+.sidebar-brand{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.sidebar-brand h2{font-size:13px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;}
+.sidebar-brand p{font-size:11px;color:var(--text-dim);margin-top:4px;}
+.sidebar nav{padding:12px 0;}
+.nav-part{
+  display:flex;align-items:center;gap:10px;padding:10px 20px;
+  font-size:13px;color:var(--text-dim);cursor:pointer;border-left:2px solid transparent;
+  transition:all .15s;user-select:none;
+}
+.nav-part:hover{color:var(--text);background:rgba(124,157,255,.06);}
+.nav-part.active{color:var(--primary);border-left-color:var(--primary);background:rgba(124,157,255,.1);}
+.nav-part .pnum{
+  width:22px;height:22px;border-radius:6px;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;
+}
+.nav-part.active .pnum{background:var(--primary-dim);color:#fff;}
+.nav-divider{height:1px;background:var(--border);margin:8px 0;}
+.sidebar-progress{padding:16px 20px;border-top:1px solid var(--border);margin-top:auto;}
+.sidebar-progress p{font-size:11px;color:var(--text-dim);margin-bottom:6px;}
+.prog-bar{height:4px;background:var(--border);border-radius:99px;}
+.prog-fill{height:4px;border-radius:99px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;transition:width .3s;}
+
+.main{flex:1;overflow-x:hidden;}
+.part-panel{display:none;padding:40px 52px 80px;max-width:1000px;}
+.part-panel.active{display:block;}
+
+.part-header{margin-bottom:36px;}
+.part-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(124,157,255,.1);border:1px solid rgba(124,157,255,.25);
+  border-radius:20px;padding:5px 14px;font-size:11px;color:var(--primary);font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;
+}
+.part-header h1{font-size:30px;font-weight:800;margin-bottom:10px;}
+.part-header p{color:var(--text-dim);font-size:15px;}
+
+.topic{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:16px;overflow:hidden;transition:border-color .2s;
+}
+.topic:hover{border-color:var(--primary-dim);}
+.topic-header{
+  display:flex;align-items:center;gap:14px;padding:18px 22px;
+  cursor:pointer;user-select:none;
+}
+.topic-header:hover{background:rgba(124,157,255,.04);}
+.topic-num{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--primary-dim),var(--primary));
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;
+}
+.topic-meta{flex:1;}
+.topic-meta h3{font-size:15px;font-weight:700;}
+.topic-meta .sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
+.topic-chevron{color:var(--text-dim);font-size:12px;transition:transform .2s;flex-shrink:0;}
+.topic.open .topic-chevron{transform:rotate(180deg);}
+.topic-body{display:none;padding:0 22px 24px;border-top:1px solid var(--border);}
+.topic.open .topic-body{display:block;}
+
+h4{font-size:14px;font-weight:700;color:var(--accent2);margin:18px 0 8px;}
+p{font-size:14px;color:#c8d0ec;margin:8px 0;}
+ul,ol{padding-left:20px;margin:8px 0;}
+li{font-size:14px;color:#c8d0ec;margin-bottom:6px;}
+strong{color:#f0e6c8;}
+em{color:var(--text-dim);font-style:italic;}
+
+.analogy{
+  background:rgba(82,219,176,.07);border-left:3px solid var(--accent);
+  border-radius:0 10px 10px 0;padding:14px 18px;margin:14px 0;
+}
+.analogy-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:6px;}
+.analogy p{font-size:13.5px;color:#b8e8d8;}
+
+.note{background:rgba(124,157,255,.07);border-left:3px solid var(--primary);border-radius:0 10px 10px 0;padding:12px 16px;margin:12px 0;}
+.warn{background:rgba(249,167,75,.07);border-left:3px solid var(--accent2);border-radius:0 10px 10px 0;padding:12px 16px;margin:12px 0;}
+.danger{background:rgba(255,107,107,.07);border-left:3px solid var(--danger);border-radius:0 10px 10px 0;padding:12px 16px;margin:12px 0;}
+.note p,.warn p,.danger p{font-size:13.5px;}
+
+.tbl{overflow-x:auto;margin:14px 0;border-radius:10px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{background:var(--surface2);color:var(--text-dim);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;color:#c8d0ec;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(124,157,255,.03);}
+
+pre{
+  background:var(--code-bg);border:1px solid var(--border);border-radius:10px;
+  padding:18px 20px;margin:14px 0;overflow-x:auto;
+  font-size:12.5px;line-height:1.7;
+  font-family:'Cascadia Code','Fira Code','Consolas',monospace;
+  color:#abb2d4;
+}
+code{background:rgba(124,157,255,.12);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:12.5px;font-family:'Cascadia Code','Fira Code',monospace;}
+pre code{background:none;color:#abb2d4;padding:0;}
+.kw{color:#c792ea;}.fn{color:#82aaff;}.str{color:#c3e88d;}.cm{color:#546e7a;}.num{color:#f78c6c;}.cls{color:#ffcb6b;}.tag{color:#f07178;}
+
+.diagram{
+  background:var(--code-bg);border:1px solid var(--border);border-radius:10px;
+  padding:20px;margin:14px 0;font-family:'Cascadia Code','Consolas','Courier New',monospace;
+  font-size:12px;line-height:1.7;color:#7c9dff;
+  white-space:pre;overflow-x:auto;tab-size:2;
+}
+
+.keys{background:var(--surface2);border-radius:10px;padding:16px 20px;margin:14px 0;}
+.keys-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:10px;}
+.keys li{font-size:13.5px;color:#c8d0ec;margin-bottom:6px;}
+.keys li::marker{color:var(--primary);}
+
+.proj-section{margin-bottom:40px;}
+.proj-section h2{font-size:20px;font-weight:700;margin-bottom:16px;color:var(--primary);}
+.proj-section h3{font-size:15px;font-weight:700;margin:14px 0 8px;color:var(--accent2);}
+.step-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 20px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start;
+}
+.step-num{
+  width:30px;height:30px;border-radius:8px;background:var(--primary-dim);
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;
+}
+.file-tree{
+  background:var(--code-bg);border:1px solid var(--border);border-radius:10px;
+  padding:16px 20px;font-family:monospace;font-size:13px;line-height:1.8;color:#7c9dff;
+}
+.service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:16px 0;}
+.svc-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.svc-card h4{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;}
+.svc-card p{font-size:12px;color:var(--text-dim);}
+.tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag-pill{
+  background:rgba(124,157,255,.1);border:1px solid rgba(124,157,255,.2);
+  border-radius:6px;padding:3px 9px;font-size:11px;color:var(--primary);font-weight:600;
+}
+
+@media(max-width:860px){
+  .sidebar{display:none;}
+  .part-panel{padding:28px 20px 60px;}
+  .part-header h1{font-size:22px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h2>Microservices</h2>
+    <p>Learn from Scratch — with examples &amp; code</p>
+  </div>
+  <nav>
+    <div class="nav-part active" onclick="goTo('p1')"><span class="pnum">1</span>Introduction</div>
+    <div class="nav-part" onclick="goTo('p2')"><span class="pnum">2</span>Architecture &amp; Design</div>
+    <div class="nav-part" onclick="goTo('p3')"><span class="pnum">3</span>Service Communication</div>
+    <div class="nav-part" onclick="goTo('p4')"><span class="pnum">4</span>Data Management</div>
+    <div class="nav-divider"></div>
+    <div class="nav-part" onclick="goTo('p5')"><span class="pnum">5</span>Docker &amp; Kubernetes</div>
+    <div class="nav-part" onclick="goTo('p6')"><span class="pnum">6</span>Monitoring &amp; Logging</div>
+    <div class="nav-part" onclick="goTo('p7')"><span class="pnum">7</span>Testing</div>
+    <div class="nav-part" onclick="goTo('p8')"><span class="pnum">8</span>Deployment &amp; CI/CD</div>
+    <div class="nav-part" onclick="goTo('p9')"><span class="pnum">9</span>Security</div>
+    <div class="nav-divider"></div>
+    <div class="nav-part" onclick="goTo('cs')" style="color:var(--accent)"><span class="pnum" style="background:#1a3d2e;color:var(--accent)">✈</span>Case Study: Airline Booking</div>
+    <div class="nav-part" onclick="goTo('proj')" style="color:var(--accent2)"><span class="pnum" style="background:#4d3d1a;color:var(--accent2)">★</span>Hands-on Project</div>
+  </nav>
+  <div class="sidebar-progress">
+    <p id="prog-text">Progress: 0 / 9 parts</p>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<main class="main">
+
+<!-- ─────────── PART 1 ─────────── -->
+<div class="part-panel active" id="p1">
+  <div class="part-header">
+    <div class="part-badge">Part 1</div>
+    <h1>Introduction to Microservices</h1>
+    <p>Understand why microservices exist, the benefits they offer, and the core principles behind the architecture.</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">1.1</div>
+      <div class="topic-meta"><h3>What are Microservices?</h3><div class="sub">The shift from Monolith to independent services</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <p><strong>Microservices</strong> is an architectural style where a large application is broken down into small, independently deployable services. Each service does one specific thing, runs in its own process, and communicates with others via APIs or messaging.</p>
+
+      <div class="analogy">
+        <div class="analogy-title">🍔 Real-world analogy</div>
+        <p><strong>Monolith</strong> = A single chef who takes orders, cooks food, makes drinks, bakes desserts, and handles billing. If the chef gets sick, the whole restaurant shuts down.</p>
+        <p style="margin-top:8px;"><strong>Microservices</strong> = A food court with separate stalls — burgers, sushi, drinks, checkout. Each stall operates independently. When the burger stall gets busy, you hire more burger staff — not more sushi chefs.</p>
+      </div>
+
+      <pre class="diagram">
+MONOLITH (Single deployable unit)
+┌──────────────────────────────────────────────┐
+│  Users + Orders + Payments + Inventory       │
+│  + Notifications + Reports + Auth + Search   │
+│  ← everything in one codebase & process →   │
+└──────────────────────────────────────────────┘
+
+MICROSERVICES (Many independent services)
+┌──────────┐  ┌──────────┐  ┌──────────┐
+│  User    │  │  Order   │  │ Payment  │
+│ Service  │  │ Service  │  │ Service  │
+└──────────┘  └──────────┘  └──────────┘
+┌──────────┐  ┌──────────┐  ┌──────────┐
+│Inventory │  │Notif-    │  │  Auth    │
+│ Service  │  │ication   │  │ Service  │
+└──────────┘  └──────────┘  └──────────┘</pre>
+
+      <div class="keys">
+        <div class="keys-title">Key Takeaways</div>
+        <ul>
+          <li>Each service does <strong>one thing</strong> only (Single Responsibility)</li>
+          <li>Each service can be <strong>deployed independently</strong> without touching others</li>
+          <li>Each service can use a <strong>different programming language or database</strong></li>
+          <li>Services communicate via <strong>APIs or message queues</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">1.2</div>
+      <div class="topic-meta"><h3>Benefits of Microservices</h3><div class="sub">Why companies like Netflix, Amazon, and Uber use this architecture</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="tbl"><table>
+        <thead><tr><th>Benefit</th><th>Explanation</th><th>Real-world example</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Independent Deployment</strong></td><td>Update one service without restarting the entire system</td><td>Amazon deploys to production every 11.7 seconds — different teams, different services</td></tr>
+          <tr><td><strong>Independent Scaling</strong></td><td>Scale only the services that are under load</td><td>Flash sale: scale Order &amp; Payment services only, not the Notification service</td></tr>
+          <tr><td><strong>Technology Flexibility</strong></td><td>Each service picks the best tool for its job</td><td>User Service → PostgreSQL, Search → Elasticsearch, Session → Redis</td></tr>
+          <tr><td><strong>Fault Isolation</strong></td><td>One service failing doesn't bring down the whole system</td><td>If the Recommendation service crashes, users can still browse and buy</td></tr>
+          <tr><td><strong>Team Autonomy</strong></td><td>Each team owns a service and ships independently</td><td>Order team deploys on their own schedule — no coordination needed with Payment team</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">1.3</div>
+      <div class="topic-meta"><h3>Benefits &amp; Challenges</h3><div class="sub">Microservices is not a silver bullet — know the trade-offs</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="warn"><p>⚠️ Microservices solve some problems but create new ones. Understand the trade-offs before adopting.</p></div>
+      <ul>
+        <li><strong>Distributed Systems Complexity:</strong> Network can fail. Services can be slow. You must handle timeouts, retries, and partial failures.</li>
+        <li><strong>Network Latency:</strong> Calling a function in the same process takes nanoseconds. Calling a service over HTTP takes milliseconds. With 10 chained calls, latency compounds.</li>
+        <li><strong>Data Consistency:</strong> You can't use a database transaction across multiple services — you need the Saga pattern (much more complex).</li>
+        <li><strong>Operational Overhead:</strong> Instead of deploying 1 app, you deploy, monitor, and log 20+ services.</li>
+        <li><strong>Testing Complexity:</strong> Testing when Service A depends on B depends on C requires a more involved environment.</li>
+      </ul>
+      <div class="note"><p>💡 <strong>When to use:</strong> Large teams, complex domain, need to scale parts independently.<br/><strong>When NOT to use:</strong> Early-stage startup, small team, unclear domain — start with a Monolith, extract services gradually.</p></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">1.4</div>
+      <div class="topic-meta"><h3>Key Principles of Microservices Design</h3><div class="sub">The rules that make microservices work well</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <h4>1. Single Responsibility</h4>
+      <p>Each service does one thing. If you need the word "and" to describe what a service does — consider splitting it.</p>
+      <p><em>Good:</em> "Order Service manages orders" ✓<br/>
+      <em>Bad:</em> "Order Service manages orders <strong>and</strong> sends emails <strong>and</strong> processes payments" ✗</p>
+
+      <h4>2. Loose Coupling</h4>
+      <p>Services should know as little as possible about each other. Changing Service A should not force Service B to change.</p>
+
+      <h4>3. High Cohesion</h4>
+      <p>Things related to each other should live in the same service. All order-related logic belongs in the Order Service — not scattered across multiple services.</p>
+
+      <h4>4. Design for Failure</h4>
+      <p>In a distributed system, failures <em>will</em> happen. Design assuming that other services can be unavailable. Use timeouts, retries, circuit breakers, and fallbacks.</p>
+
+      <h4>5. Decentralized Data Management</h4>
+      <p>Each service owns its database. No shared databases between services. If a service needs another's data — call its API or use events.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 2 ─────────── -->
+<div class="part-panel" id="p2">
+  <div class="part-header">
+    <div class="part-badge">Part 2</div>
+    <h1>Architecture &amp; Design</h1>
+    <p>How to decompose services, design APIs, and let services find each other dynamically.</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">2.1</div>
+      <div class="topic-meta"><h3>Service Decomposition Strategies</h3><div class="sub">How to decide where to draw the boundaries</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <h4>Approach 1: Decompose by Business Capability</h4>
+      <p>Split by what the system <em>can do</em> from a business perspective.</p>
+      <pre class="diagram">
+E-commerce System
+├── User Management       → user-service
+├── Product Catalog       → product-service
+├── Order Management      → order-service
+├── Payment Processing    → payment-service
+├── Inventory Management  → inventory-service
+├── Shipping              → shipping-service
+└── Notifications         → notification-service</pre>
+
+      <h4>Approach 2: The Strangler Fig Pattern</h4>
+      <div class="analogy">
+        <div class="analogy-title">🌿 Analogy</div>
+        <p>A strangler fig vine wraps around a host tree, slowly replacing it. Eventually the original tree dies and only the new vine remains. Similarly: start with your Monolith, incrementally carve out services, until the Monolith is fully replaced — without rewriting everything from scratch.</p>
+      </div>
+      <p>This is the most pragmatic approach when migrating legacy systems.</p>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">2.2</div>
+      <div class="topic-meta"><h3>Domain-Driven Design (DDD) Basics</h3><div class="sub">Design software around the real business domain</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <p><strong>DDD</strong> is a design philosophy that centers the software model on the business domain — not on technical layers like "database layer" or "API layer".</p>
+
+      <div class="analogy">
+        <div class="analogy-title">🏥 Example: Hospital system</div>
+        <p>A hospital has distinct departments: clinic, pharmacy, lab, billing. Each has its own language, rules, and processes — these are <strong>Bounded Contexts</strong>. The word "patient" means something slightly different in each context.</p>
+      </div>
+
+      <div class="tbl"><table>
+        <thead><tr><th>DDD Term</th><th>Meaning</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Domain</strong></td><td>The problem space / business area</td><td>E-commerce is a Domain</td></tr>
+          <tr><td><strong>Bounded Context</strong></td><td>A clear boundary within which a model is defined consistently</td><td>Order Context, Payment Context, Inventory Context</td></tr>
+          <tr><td><strong>Entity</strong></td><td>Object with a unique identity that changes over time</td><td>Order (has an ID, status changes over time)</td></tr>
+          <tr><td><strong>Value Object</strong></td><td>Object defined by its attributes, no identity needed, immutable</td><td>Address: "123 Main St" — no need for its own ID</td></tr>
+          <tr><td><strong>Aggregate</strong></td><td>Cluster of related Entities/VOs treated as a unit, with one Aggregate Root</td><td>Order (root) + OrderItems + ShippingAddress</td></tr>
+          <tr><td><strong>Repository</strong></td><td>Interface for storing/retrieving Aggregates</td><td>orderRepository.save(order), orderRepository.findById(id)</td></tr>
+          <tr><td><strong>Domain Event</strong></td><td>Something that happened in the domain</td><td>OrderPlaced, PaymentCompleted, ItemShipped</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="note"><p>💡 Each Bounded Context typically maps to one microservice. This gives you a principled way to draw service boundaries.</p></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">2.3</div>
+      <div class="topic-meta"><h3>API Design &amp; Management</h3><div class="sub">RESTful conventions, versioning, and contract-first</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <h4>RESTful API Conventions</h4>
+      <pre><span class="cm"># Resource-based API design for Order Service</span>
+
+GET    /orders          <span class="cm"># List orders</span>
+GET    /orders/:id      <span class="cm"># Get one order</span>
+POST   /orders          <span class="cm"># Create a new order</span>
+PUT    /orders/:id      <span class="cm"># Full update</span>
+PATCH  /orders/:id      <span class="cm"># Partial update</span>
+DELETE /orders/:id      <span class="cm"># Delete an order</span>
+
+<span class="cm"># HTTP Status Codes</span>
+200 OK           <span class="cm"># Success</span>
+201 Created      <span class="cm"># Resource created</span>
+400 Bad Request  <span class="cm"># Client error (invalid input)</span>
+401 Unauthorized <span class="cm"># Not authenticated</span>
+403 Forbidden    <span class="cm"># Authenticated but not authorized</span>
+404 Not Found    <span class="cm"># Resource doesn't exist</span>
+500 Server Error <span class="cm"># Server-side failure</span></pre>
+
+      <h4>API Versioning</h4>
+      <p>When you change an API and don't want to break existing clients, use versioning:</p>
+      <pre><span class="cm"># Option 1: URL versioning (most common)</span>
+GET /api/v1/orders
+GET /api/v2/orders
+
+<span class="cm"># Option 2: Header versioning</span>
+GET /orders
+Accept: application/vnd.myapp.v2+json</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">2.4</div>
+      <div class="topic-meta"><h3>Service Discovery &amp; Registration</h3><div class="sub">How services find each other at runtime</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">📖 Analogy</div>
+        <p>When you have 10 running instances of Order Service, how does Payment Service know which IP to call? Think of it like a phone directory — instead of memorizing phone numbers, you look up a name and the directory gives you the number.</p>
+      </div>
+
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>Static (hardcoded)</th><th>Dynamic — Service Registry</th></tr></thead>
+        <tbody>
+          <tr><td><strong>How it works</strong></td><td>Hardcode IP/hostname in config</td><td>Service registers on startup, deregisters on shutdown</td></tr>
+          <tr><td><strong>Problem</strong></td><td>IPs change when containers restart</td><td>More complex but fully automatic</td></tr>
+          <tr><td><strong>Tools</strong></td><td>Config files, .env</td><td>Consul, Eureka, Kubernetes DNS</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>In Kubernetes — the simplest approach</h4>
+      <p>K8s automatically creates a DNS entry for every Service resource. Order Service calls Payment Service simply with <code>http://payment-service:3003</code> — Kubernetes routes it to the right pod automatically.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 3 ─────────── -->
+<div class="part-panel" id="p3">
+  <div class="part-header">
+    <div class="part-badge">Part 3</div>
+    <h1>Service Communication</h1>
+    <p>Two fundamental patterns: synchronous (request/response) and asynchronous (event-driven).</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">3.1</div>
+      <div class="topic-meta"><h3>Synchronous Communication</h3><div class="sub">REST &amp; gRPC — caller waits for a response</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">📞 Analogy</div>
+        <p><strong>Synchronous</strong> = A phone call. You dial → wait for the other person to pick up → talk → get an answer immediately. If they don't pick up, you're blocked waiting.</p>
+      </div>
+      <pre><span class="kw">const</span> axios = <span class="fn">require</span>(<span class="str">'axios'</span>)
+
+<span class="cm">// Order Service calls Payment Service synchronously</span>
+<span class="kw">async function</span> <span class="fn">createOrder</span>(orderData) {
+  <span class="kw">try</span> {
+    <span class="cm">// We WAIT for the payment response before continuing</span>
+    <span class="kw">const</span> payment = <span class="kw">await</span> axios.<span class="fn">post</span>(<span class="str">'http://payment-service/payments'</span>, {
+      amount: orderData.total,
+      userId: orderData.userId
+    }, {
+      timeout: <span class="num">5000</span>  <span class="cm">// always set a timeout!</span>
+    })
+
+    <span class="kw">return</span> { orderId: <span class="str">'ORD-001'</span>, paymentId: payment.data.id }
+  } <span class="kw">catch</span> (err) {
+    <span class="cm">// Must handle the case where the other service is down</span>
+    <span class="kw">throw new</span> <span class="cls">Error</span>(<span class="str">'Payment service unavailable'</span>)
+  }
+}</pre>
+
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>REST</th><th>gRPC</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Protocol</strong></td><td>HTTP/1.1</td><td>HTTP/2</td></tr>
+          <tr><td><strong>Format</strong></td><td>JSON (text)</td><td>Protocol Buffers (binary)</td></tr>
+          <tr><td><strong>Speed</strong></td><td>Baseline</td><td>~5-10x faster</td></tr>
+          <tr><td><strong>Browser support</strong></td><td>Native</td><td>Limited</td></tr>
+          <tr><td><strong>Streaming</strong></td><td>Not native</td><td>Bidirectional streaming</td></tr>
+          <tr><td><strong>Best for</strong></td><td>External/public APIs</td><td>Internal service-to-service</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">3.2</div>
+      <div class="topic-meta"><h3>Asynchronous Communication</h3><div class="sub">Message Queues &amp; Event Streaming — fire and forget</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">📬 Analogy</div>
+        <p><strong>Asynchronous</strong> = Sending an email. You write it → hit send → go back to work immediately. You don't wait for the recipient to read and reply. They'll process it when they're ready.</p>
+      </div>
+
+      <pre class="diagram">
+Producer (Sender)        Message Broker          Consumer (Receiver)
+                         (Middleman)
+Order Service    →→→    [Queue/Topic]    →→→    Payment Service
+                                         →→→    Notification Service
+                                         →→→    Analytics Service</pre>
+
+      <pre><span class="cm">// ── Publisher: Order Service publishes an event ──</span>
+<span class="kw">const</span> amqp = <span class="fn">require</span>(<span class="str">'amqplib'</span>)
+
+<span class="kw">async function</span> <span class="fn">publishOrderCreated</span>(order) {
+  <span class="kw">const</span> conn    = <span class="kw">await</span> amqp.<span class="fn">connect</span>(<span class="str">'amqp://rabbitmq'</span>)
+  <span class="kw">const</span> channel = <span class="kw">await</span> conn.<span class="fn">createChannel</span>()
+
+  <span class="kw">const</span> event = {
+    type:      <span class="str">'ORDER_CREATED'</span>,
+    payload:   { orderId: order.id, amount: order.total, userId: order.userId },
+    timestamp: <span class="kw">new</span> <span class="cls">Date</span>().<span class="fn">toISOString</span>()
+  }
+
+  <span class="cm">// Send to queue — we do NOT wait for anyone to consume it</span>
+  channel.<span class="fn">sendToQueue</span>(<span class="str">'orders'</span>, <span class="cls">Buffer</span>.<span class="fn">from</span>(<span class="cls">JSON</span>.<span class="fn">stringify</span>(event)))
+  console.<span class="fn">log</span>(<span class="str">'Event published, moving on...'</span>)
+}
+
+<span class="cm">// ── Consumer: Payment Service listens ──</span>
+<span class="kw">async function</span> <span class="fn">startConsumer</span>() {
+  <span class="kw">const</span> conn    = <span class="kw">await</span> amqp.<span class="fn">connect</span>(<span class="str">'amqp://rabbitmq'</span>)
+  <span class="kw">const</span> channel = <span class="kw">await</span> conn.<span class="fn">createChannel</span>()
+  <span class="kw">await</span> channel.<span class="fn">assertQueue</span>(<span class="str">'orders'</span>)
+
+  channel.<span class="fn">consume</span>(<span class="str">'orders'</span>, <span class="kw">async</span> (msg) => {
+    <span class="kw">const</span> event = <span class="cls">JSON</span>.<span class="fn">parse</span>(msg.content.<span class="fn">toString</span>())
+    <span class="kw">if</span> (event.type === <span class="str">'ORDER_CREATED'</span>) {
+      <span class="kw">await</span> <span class="fn">processPayment</span>(event.payload)
+      channel.<span class="fn">ack</span>(msg) <span class="cm">// acknowledge successful processing</span>
+    }
+  })
+}</pre>
+
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>RabbitMQ</th><th>Kafka</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Paradigm</strong></td><td>Message queue (push)</td><td>Event log / streaming (pull)</td></tr>
+          <tr><td><strong>Message retention</strong></td><td>Deleted after consumer receives</td><td>Retained long-term (replayable)</td></tr>
+          <tr><td><strong>Throughput</strong></td><td>Tens of thousands/sec</td><td>Millions/sec</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Task queues, job processing, RPC</td><td>Event log, audit trail, analytics</td></tr>
+          <tr><td><strong>Complexity</strong></td><td>Simpler, faster to set up</td><td>More complex, needs ZooKeeper/KRaft</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">3.3</div>
+      <div class="topic-meta"><h3>API Gateways</h3><div class="sub">Single entry point for the entire system</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🏢 Analogy</div>
+        <p>An API Gateway is like the reception desk of a large office building. Guests don't wander directly to individual offices — they check in at reception. Reception verifies identity (authentication), directs to the right floor (routing), and logs all visits (observability).</p>
+      </div>
+
+      <pre class="diagram">
+Client (App/Browser)
+       ↓
+[API Gateway :80]
+  ├── /api/users   → User Service :3001
+  ├── /api/orders  → Order Service :3002
+  ├── /api/payment → Payment Service :3003
+  └── Also handles: Auth, Rate Limiting, Logging, SSL</pre>
+
+      <pre><span class="cm"># Nginx as a simple API Gateway</span>
+events {}
+http {
+  server {
+    listen 80;
+
+    location /api/users {
+      proxy_pass http://user-service:3001;
+    }
+
+    location /api/orders {
+      limit_req zone=api burst=20;   <span class="cm"># rate limiting</span>
+      proxy_pass http://order-service:3002;
+    }
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">3.4</div>
+      <div class="topic-meta"><h3>Circuit Breakers &amp; Fault Tolerance</h3><div class="sub">Stop calling a broken service, fail fast</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">⚡ Analogy</div>
+        <p>A circuit breaker in your home: normally electricity flows freely (CLOSED). When there's a short circuit → the breaker trips (OPEN), protecting your devices. After some time → you try to reset it (HALF-OPEN). Same idea: when Service B keeps failing, the Circuit Breaker trips — Service A stops calling B and returns an error immediately instead of waiting for timeout.</p>
+      </div>
+
+      <pre class="diagram">
+Circuit Breaker States:
+
+CLOSED (Normal) →  OPEN (Tripped)
+   ↑ errors below threshold    ↓ errors exceed threshold (e.g. 50%)
+   │                           ↓
+HALF-OPEN (Testing) ← after 30s timeout
+  success → CLOSED
+  failure → OPEN again</pre>
+
+      <pre><span class="cm">// Using 'opossum' — Node.js Circuit Breaker library</span>
+<span class="kw">const</span> CircuitBreaker = <span class="fn">require</span>(<span class="str">'opossum'</span>)
+
+<span class="kw">function</span> <span class="fn">callPaymentService</span>(data) {
+  <span class="kw">return</span> axios.<span class="fn">post</span>(<span class="str">'http://payment-service/pay'</span>, data)
+}
+
+<span class="kw">const</span> breaker = <span class="kw">new</span> <span class="cls">CircuitBreaker</span>(callPaymentService, {
+  timeout:                  <span class="num">3000</span>,  <span class="cm">// 3s timeout per call</span>
+  errorThresholdPercentage: <span class="num">50</span>,    <span class="cm">// open when 50% fail</span>
+  resetTimeout:             <span class="num">30000</span>  <span class="cm">// try again after 30s</span>
+})
+
+<span class="cm">// Fallback: return a safe default when circuit is OPEN</span>
+breaker.<span class="fn">fallback</span>(() => ({ status: <span class="str">'PENDING'</span>, message: <span class="str">'Will be processed shortly'</span> }))
+
+<span class="kw">const</span> result = <span class="kw">await</span> breaker.<span class="fn">fire</span>({ amount: <span class="num">100</span> })</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 4 ─────────── -->
+<div class="part-panel" id="p4">
+  <div class="part-header">
+    <div class="part-badge">Part 4</div>
+    <h1>Data Management</h1>
+    <p>Each service owns its data — so how do we keep data consistent across services?</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">4.1</div>
+      <div class="topic-meta"><h3>Database per Service Pattern</h3><div class="sub">Each service owns its own database</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <p>The rule: each microservice <strong>owns its data</strong> and is the only one with direct database access. Other services must go through its API to get data.</p>
+      <pre class="diagram">
+❌ Wrong: Shared Database
+User Service  ─┐
+Order Service ─┤→ [Shared Database]
+Payment Svc   ─┘
+→ Schema change in one place → all services potentially break
+
+✓ Right: Database per Service
+User Service   → [User DB — PostgreSQL]
+Order Service  → [Order DB — PostgreSQL]
+Payment Svc    → [Payment DB — MySQL]
+Search Svc     → [Search DB — Elasticsearch]
+Session Svc    → [Session DB — Redis]</pre>
+
+      <p>Each service can also choose the database type best suited for its use case!</p>
+
+      <div class="warn"><p>⚠️ <strong>Biggest downside:</strong> You cannot use SQL JOINs across services because they live in completely separate databases. There are two primary solutions.</p></div>
+
+      <h4>The concrete problem — why JOINs don't work</h4>
+      <p>Say you want to list orders along with the customer's name:</p>
+      <pre><span class="cm">-- ❌ IMPOSSIBLE: Order DB has no knowledge of the Users DB</span>
+<span class="kw">SELECT</span> o.id, o.total, u.name, u.email
+<span class="kw">FROM</span>   orders o
+<span class="kw">JOIN</span>   users  u <span class="kw">ON</span> o.user_id = u.id
+<span class="cm">-- → ERROR: relation "users" does not exist</span>
+
+<span class="cm">-- Because:
+-- Order DB  only has the "orders" table
+-- User DB   only has the "users"  table
+-- They are completely isolated — neither knows the other exists</span></pre>
+
+      <h4>Solution 1: API Composition</h4>
+      <div class="analogy">
+        <div class="analogy-title">🔀 Analogy</div>
+        <p>Instead of letting the database do the join, <em>you</em> do the join in application code: call Order Service for orders, call User Service for user info, then merge the results yourself.</p>
+      </div>
+      <pre><span class="cm">// API Gateway or BFF merges data from multiple services</span>
+<span class="kw">async function</span> <span class="fn">getOrdersWithUser</span>(userId) {
+  <span class="cm">// Step 1: Fetch orders from Order Service</span>
+  <span class="kw">const</span> orders = <span class="kw">await</span> orderService.<span class="fn">getOrdersByUser</span>(userId)
+
+  <span class="cm">// Step 2: Fetch user info from User Service</span>
+  <span class="kw">const</span> user = <span class="kw">await</span> userService.<span class="fn">getUser</span>(userId)
+
+  <span class="cm">// Step 3: Merge in code (the "JOIN" happens in application layer)</span>
+  <span class="kw">return</span> orders.<span class="fn">map</span>(order => ({
+    ...order,
+    user: { name: user.name, email: user.email }
+  }))
+}
+
+<span class="cm">// ⚠️ Watch out for the N+1 Problem on complex queries:
+// If user A has 100 orders, each from a different seller:</span>
+<span class="kw">for</span> (<span class="kw">const</span> order <span class="kw">of</span> orders) {          <span class="cm">// 100 orders</span>
+  <span class="kw">const</span> seller = <span class="kw">await</span> sellerService.<span class="fn">get</span>(order.sellerId) <span class="cm">// 100 HTTP calls!</span>
+}
+<span class="cm">// → 1 original request + 100 sub-requests = very slow</span></pre>
+
+      <h4>Solution 2: CQRS Read Model (Materialized View)</h4>
+      <div class="analogy">
+        <div class="analogy-title">📋 Analogy</div>
+        <p>Instead of joining at query time, you <strong>pre-join when events happen</strong> and store the merged result in a dedicated read-optimized table. Like photocopying all the relevant information onto one sheet in advance — when someone asks, you just hand them the sheet. No running around gathering pieces.</p>
+      </div>
+      <pre><span class="cm">// ── Step 1: Each service publishes events when data changes ──</span>
+
+<span class="cm">// Order Service: publish when an order is created</span>
+channel.<span class="fn">publish</span>(<span class="str">'events'</span>, <span class="str">'order.created'</span>, {
+  orderId: <span class="num">1</span>, userId: <span class="num">42</span>, total: <span class="num">199</span>, status: <span class="str">'PENDING'</span>
+})
+
+<span class="cm">// User Service: publish when a user updates their profile</span>
+channel.<span class="fn">publish</span>(<span class="str">'events'</span>, <span class="str">'user.updated'</span>, {
+  userId: <span class="num">42</span>, name: <span class="str">'Alice'</span>, email: <span class="str">'alice@example.com'</span>
+})
+
+<span class="cm">// ── Step 2: Read Model Service listens, builds a denormalized "view" ──</span>
+channel.<span class="fn">consume</span>(<span class="str">'order.created'</span>, <span class="kw">async</span> (event) => {
+  <span class="cm">// Fetch extra info once — at event time, not at query time</span>
+  <span class="kw">const</span> user = <span class="kw">await</span> userService.<span class="fn">getUser</span>(event.userId)
+
+  <span class="cm">// Store into a READ-optimized table — already denormalized</span>
+  <span class="kw">await</span> readDb.<span class="fn">query</span>(<span class="str">`
+    INSERT INTO order_summary
+      (order_id, user_id, user_name, user_email, total, status)
+    VALUES ($1, $2, $3, $4, $5, $6)
+  `</span>, [event.orderId, event.userId, user.name, user.email, event.total, <span class="str">'PENDING'</span>])
+})
+
+<span class="cm">// ── Step 3: Lightning-fast queries — no JOINs needed ──</span>
+app.<span class="fn">get</span>(<span class="str">'/order-summary'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="cm">// Single simple query — all data is already co-located</span>
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> readDb.<span class="fn">query</span>(
+    <span class="str">'SELECT * FROM order_summary WHERE user_id = $1'</span>, [req.user.userId]
+  )
+  <span class="cm">// → Result already contains: order_id, user_name, user_email, total, status</span>
+  res.<span class="fn">json</span>(rows)
+})</pre>
+
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>API Composition</th><th>CQRS Read Model</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Complexity</strong></td><td>Low — simple to implement</td><td>High — requires event pipeline</td></tr>
+          <tr><td><strong>Data freshness</strong></td><td>Real-time (always latest)</td><td>Eventual (may lag by seconds)</td></tr>
+          <tr><td><strong>Performance at scale</strong></td><td>Poor — N+1 problem with large data</td><td>Excellent — single table lookup</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Simple queries, low volume, real-time</td><td>Complex queries, high read volume</td></tr>
+          <tr><td><strong>Example</strong></td><td>Single order detail page</td><td>"All Orders" dashboard with filters &amp; sorting</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">4.2</div>
+      <div class="topic-meta"><h3>Distributed Transactions &amp; Eventual Consistency</h3><div class="sub">Saga Pattern — the solution to cross-service transactions</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🏦 Analogy</div>
+        <p>Wire transfer: debit Account A (Bank A's DB) and credit Account B (Bank B's DB). In a monolith, one ACID transaction handles this. In microservices, two separate databases — you can't span a single transaction across them!</p>
+      </div>
+
+      <h4>Saga Pattern — the solution</h4>
+      <p>A Saga is a sequence of local transactions. Each step publishes an event triggering the next. If a step fails, <strong>compensating transactions</strong> undo all previous committed steps — in reverse order.</p>
+
+      <div class="note"><p>💡 Sagas come in two flavors: <strong>Choreography</strong> (each service reacts to events independently) and <strong>Orchestration</strong> (a central Saga Orchestrator drives the flow). The examples below use Choreography — the more common approach.</p></div>
+
+      <h4>Detailed flow — Happy Path</h4>
+      <pre class="diagram">
+CLIENT                ORDER SVC        PAYMENT SVC      INVENTORY SVC
+  │                       │                │                 │
+  │── POST /orders ──────►│                │                 │
+  │                       │ 1. INSERT order│                 │
+  │                       │    status=PENDING               │
+  │                       │ 2. publish ───►│                 │
+  │                       │  ORDER_CREATED │                 │
+  │                       │                │ 3. charge card  │
+  │                       │                │    INSERT payment│
+  │                       │                │    status=PAID  │
+  │                       │                │ 4. publish ────►│
+  │                       │                │  PAYMENT_DONE   │
+  │                       │                │                 │ 5. check stock
+  │                       │                │                 │    UPDATE stock -1
+  │                       │                │                 │ 6. publish
+  │                       │◄───────────────────────────────  │
+  │                       │        STOCK_RESERVED            │
+  │                       │ 7. UPDATE order                  │
+  │                       │    status=CONFIRMED              │
+  │◄── 201 Created ───────│                │                 │</pre>
+
+      <h4>Detailed flow — Failure Path (out of stock at step 3)</h4>
+      <pre class="diagram">
+CLIENT                ORDER SVC        PAYMENT SVC      INVENTORY SVC
+  │                       │                │                 │
+  │── POST /orders ──────►│                │                 │
+  │                       │ 1. INSERT order│                 │
+  │                       │    status=PENDING               │
+  │                       │ 2. publish ───►│                 │
+  │                       │  ORDER_CREATED │                 │
+  │                       │                │ 3. charge card  │
+  │                       │                │    INSERT payment│
+  │                       │                │ 4. publish ────►│
+  │                       │                │  PAYMENT_DONE   │
+  │                       │                │                 │ 5. check stock
+  │                       │                │                 │    → OUT OF STOCK!
+  │                       │                │                 │ 6. publish
+  │                       │                │◄───────────────  │
+  │                       │                │   STOCK_FAILED  │
+  │                       │                │ 7. COMPENSATE:  │
+  │                       │                │    refund card  │
+  │                       │                │    UPDATE payment│
+  │                       │                │    status=REFUND │
+  │                       │                │ 8. publish      │
+  │                       │◄───────────────│                 │
+  │                       │  PAYMENT_REFUNDED                │
+  │                       │ 9. COMPENSATE: │                 │
+  │                       │    UPDATE order│                 │
+  │                       │    status=CANCELLED             │
+  │◄── (webhook/poll) ────│                │                 │</pre>
+
+      <h4>Code — Choreography Saga implementation</h4>
+      <p>Each service listens for events, does its local work, then publishes the next event (or a compensating event on failure):</p>
+      <pre><span class="cm">// ── ORDER SERVICE ──────────────────────────────────────────</span>
+
+<span class="cm">// Step 1-2: Receive client request, create order, publish event</span>
+app.<span class="fn">post</span>(<span class="str">'/orders'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> order = <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'INSERT INTO orders(user_id, total, status) VALUES($1,$2,$3) RETURNING *'</span>,
+    [req.user.userId, req.body.total, <span class="str">'PENDING'</span>]
+  )
+  <span class="cm">// Kick off the saga — Payment Service will pick this up</span>
+  <span class="kw">await</span> channel.<span class="fn">publish</span>(<span class="str">'saga'</span>, <span class="str">'order.created'</span>, {
+    orderId: order.rows[<span class="num">0</span>].id,
+    userId:  req.user.userId,
+    total:   req.body.total,
+    items:   req.body.items
+  })
+  res.<span class="fn">status</span>(<span class="num">202</span>).<span class="fn">json</span>({ orderId: order.rows[<span class="num">0</span>].id, status: <span class="str">'PENDING'</span> })
+})
+
+<span class="cm">// Step 9: Compensate — cancel order when payment was refunded</span>
+channel.<span class="fn">consume</span>(<span class="str">'payment.refunded'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'UPDATE orders SET status=$1 WHERE id=$2'</span>,
+    [<span class="str">'CANCELLED'</span>, event.orderId]
+  )
+  console.<span class="fn">log</span>(<span class="str">`❌ Order ${event.orderId} CANCELLED — reason: ${event.reason}`</span>)
+})
+
+<span class="cm">// Happy path: confirm order when stock is reserved</span>
+channel.<span class="fn">consume</span>(<span class="str">'stock.reserved'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'UPDATE orders SET status=$1 WHERE id=$2'</span>,
+    [<span class="str">'CONFIRMED'</span>, event.orderId]
+  )
+  console.<span class="fn">log</span>(<span class="str">`✅ Order ${event.orderId} CONFIRMED`</span>)
+})
+
+<span class="cm">// ── PAYMENT SERVICE ─────────────────────────────────────────</span>
+
+<span class="cm">// Steps 3-4: Listen for ORDER_CREATED → charge → publish next</span>
+channel.<span class="fn">consume</span>(<span class="str">'order.created'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> txId = <span class="kw">await</span> paymentGateway.<span class="fn">charge</span>(event.userId, event.total)
+
+    <span class="kw">await</span> db.<span class="fn">query</span>(
+      <span class="str">'INSERT INTO payments(order_id, tx_id, amount, status) VALUES($1,$2,$3,$4)'</span>,
+      [event.orderId, txId, event.total, <span class="str">'CHARGED'</span>]
+    )
+    <span class="cm">// Payment succeeded → let Inventory Service continue</span>
+    <span class="kw">await</span> channel.<span class="fn">publish</span>(<span class="str">'saga'</span>, <span class="str">'payment.done'</span>, {
+      orderId: event.orderId, txId, items: event.items
+    })
+    console.<span class="fn">log</span>(<span class="str">`💳 Charged $${event.total} for order ${event.orderId}`</span>)
+
+  } <span class="kw">catch</span> (err) {
+    <span class="cm">// Charge failed → compensate immediately</span>
+    <span class="kw">await</span> channel.<span class="fn">publish</span>(<span class="str">'saga'</span>, <span class="str">'payment.failed'</span>, {
+      orderId: event.orderId, reason: err.message
+    })
+  }
+})
+
+<span class="cm">// Steps 7-8: COMPENSATE — refund when stock reservation failed</span>
+channel.<span class="fn">consume</span>(<span class="str">'stock.failed'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">const</span> payment = <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'SELECT tx_id FROM payments WHERE order_id=$1'</span>, [event.orderId]
+  )
+  <span class="cm">// Issue the refund</span>
+  <span class="kw">await</span> paymentGateway.<span class="fn">refund</span>(payment.rows[<span class="num">0</span>].tx_id)
+  <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'UPDATE payments SET status=$1 WHERE order_id=$2'</span>,
+    [<span class="str">'REFUNDED'</span>, event.orderId]
+  )
+  <span class="cm">// Notify Order Service to cancel</span>
+  <span class="kw">await</span> channel.<span class="fn">publish</span>(<span class="str">'saga'</span>, <span class="str">'payment.refunded'</span>, {
+    orderId: event.orderId, reason: event.reason
+  })
+  console.<span class="fn">log</span>(<span class="str">`💸 Refunded order ${event.orderId} — reason: ${event.reason}`</span>)
+})
+
+<span class="cm">// ── INVENTORY SERVICE ───────────────────────────────────────</span>
+
+<span class="cm">// Steps 5-6: Listen for PAYMENT_DONE → check and deduct stock</span>
+channel.<span class="fn">consume</span>(<span class="str">'payment.done'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> event.items) {
+    <span class="kw">const</span> result = <span class="kw">await</span> db.<span class="fn">query</span>(
+      <span class="str">'UPDATE inventory SET stock = stock - $1 WHERE product_id=$2 AND stock >= $1 RETURNING *'</span>,
+      [item.qty, item.productId]
+    )
+    <span class="kw">if</span> (result.rowCount === <span class="num">0</span>) {
+      <span class="cm">// Out of stock! → trigger compensating chain</span>
+      <span class="kw">await</span> channel.<span class="fn">publish</span>(<span class="str">'saga'</span>, <span class="str">'stock.failed'</span>, {
+        orderId: event.orderId,
+        reason:  <span class="str">`Product ${item.productId} out of stock`</span>
+      })
+      console.<span class="fn">log</span>(<span class="str">`📦 Stock failed for order ${event.orderId}`</span>)
+      <span class="kw">return</span>  <span class="cm">// stop processing further items</span>
+    }
+  }
+  <span class="cm">// All items in stock → saga happy path complete</span>
+  <span class="kw">await</span> channel.<span class="fn">publish</span>(<span class="str">'saga'</span>, <span class="str">'stock.reserved'</span>, { orderId: event.orderId })
+  console.<span class="fn">log</span>(<span class="str">`✅ Stock reserved for order ${event.orderId}`</span>)
+})</pre>
+
+      <h4>Why idempotency is critical in Sagas</h4>
+      <p>If a message is delivered twice (network retry), a compensating transaction could run twice — refunding money twice! Solution: each event carries an <strong>idempotency key</strong>; consumers check before processing.</p>
+      <pre><span class="cm">// Check idempotency before processing any event</span>
+channel.<span class="fn">consume</span>(<span class="str">'payment.done'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">const</span> alreadyDone = <span class="kw">await</span> redis.<span class="fn">get</span>(<span class="str">`processed:${event.eventId}`</span>)
+  <span class="kw">if</span> (alreadyDone) { channel.<span class="fn">ack</span>(msg); <span class="kw">return</span> }  <span class="cm">// skip duplicate</span>
+
+  <span class="kw">await</span> <span class="fn">processStock</span>(event)
+
+  <span class="kw">await</span> redis.<span class="fn">setEx</span>(<span class="str">`processed:${event.eventId}`</span>, <span class="num">86400</span>, <span class="str">'1'</span>)  <span class="cm">// mark done, 24h TTL</span>
+  channel.<span class="fn">ack</span>(msg)
+})</pre>
+
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>Choreography</th><th>Orchestration</th></tr></thead>
+        <tbody>
+          <tr><td><strong>How it works</strong></td><td>Each service reacts to events independently</td><td>A central Saga Orchestrator calls each service in sequence</td></tr>
+          <tr><td><strong>Coupling</strong></td><td>Loose — services don't know each other</td><td>Tighter — orchestrator knows the full flow</td></tr>
+          <tr><td><strong>Debugging</strong></td><td>Hard — logic is distributed across services</td><td>Easy — all logic is in one place</td></tr>
+          <tr><td><strong>SPOF risk</strong></td><td>None</td><td>Orchestrator could be a SPOF</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Simple flows, few steps</td><td>Complex flows with conditional branching</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>Eventual Consistency</h4>
+      <p>Instead of guaranteeing all databases are in sync <em>immediately</em> (strong consistency), the system guarantees they will be consistent <em>eventually</em>.</p>
+      <div class="analogy">
+        <div class="analogy-title">📱 Real-world example</div>
+        <p>Facebook Like: you like a post → your count shows 1,001 immediately. Your friend in Tokyo still sees 1,000 for a few seconds. After DB sync → everyone sees 1,001. This is Eventual Consistency — a deliberate design choice, not a bug.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">4.3</div>
+      <div class="topic-meta"><h3>CQRS</h3><div class="sub">Command Query Responsibility Segregation — separate read and write models</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">📚 Analogy</div>
+        <p>A library has two separate desks: a <strong>CHECKOUT desk</strong> (write — Commands) and a <strong>CATALOG desk</strong> (read — Queries). The catalog can have multiple optimized copies for fast search, while checkout focuses on accuracy. They serve different purposes with different requirements.</p>
+      </div>
+
+      <pre class="diagram">
+                    ┌─ Command Side (Writes) ──┐
+Client → API ──┤   Write DB (normalized)     │
+                    └──────────────────────────┘
+                              ↓ publishes events
+                    ┌─ Query Side (Reads) ─────┐
+Client → API ──┤   Read DB (denormalized)    │
+                    └──────────────────────────┘</pre>
+
+      <ul>
+        <li><strong>Commands (writes):</strong> CreateOrder, UpdateOrder, CancelOrder</li>
+        <li><strong>Queries (reads):</strong> GetOrderById, ListUserOrders, SearchOrders</li>
+      </ul>
+      <div class="note"><p>💡 <strong>When to use CQRS:</strong> When read and write load is very asymmetric (e.g. 100 reads per 1 write), or when complex queries can't be efficiently served by the write model.</p></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">4.4</div>
+      <div class="topic-meta"><h3>Event Sourcing</h3><div class="sub">Store events, not current state</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🏦 Analogy</div>
+        <p>A bank ledger doesn't store "current balance: $5,000" — it stores every transaction: "+$10,000 salary", "-$3,000 rent", "-$2,000 groceries". Balance = sum of all transactions. Event Sourcing works the same way: instead of storing <em>state</em>, you store <em>everything that happened</em>.</p>
+      </div>
+
+      <div class="tbl"><table>
+        <thead><tr><th>Traditional (State-based)</th><th>Event Sourcing (Event-based)</th></tr></thead>
+        <tbody>
+          <tr><td>Store: <code>Order {status: "SHIPPED"}</code></td><td>Store: OrderCreated → PaymentDone → ItemPicked → ItemShipped</td></tr>
+          <tr><td>No history of how we got here</td><td>Full audit trail, can replay from any point in time</td></tr>
+          <tr><td>UPDATEs overwrite old data — history lost</td><td>INSERT only (append-only) — data is never lost</td></tr>
+          <tr><td>Simpler</td><td>More complex but perfect audit log and full debuggability</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>Architecture overview — 4 core components</h4>
+      <pre class="diagram">
+┌─────────────────────────────────────────────────────────────────────┐
+│                     EVENT SOURCING ARCHITECTURE                     │
+│                                                                     │
+│  Client                                                             │
+│    │ (1) POST /orders — sends a Command                             │
+│    ▼                                                                │
+│  ┌─────────────────┐                                                │
+│  │  Order Service  │ (2) validate the Command                      │
+│  │  (Aggregate)    │ (3) produce Domain Event: OrderCreated        │
+│  └────────┬────────┘                                                │
+│           │ (4) APPEND event to Event Store                         │
+│           ▼                                                         │
+│  ┌─────────────────┐   (5) publish event onto Event Bus            │
+│  │  Event Store    │ ──────────────────────────────────┐           │
+│  │  (append-only)  │                                   │           │
+│  └─────────────────┘                                   │           │
+│                                                         ▼           │
+│                                               ┌──────────────────┐  │
+│                                               │   Event Bus      │  │
+│                                               │  (Kafka/RabbitMQ)│  │
+│                                               └──┬───────┬───────┘  │
+│                        (6) consume events        │       │           │
+│                  ┌───────────────────────────────┘       │           │
+│                  ▼                                       ▼           │
+│          ┌───────────────┐                    ┌───────────────────┐  │
+│          │Payment Service│                    │  Projection /     │  │
+│          │(charge card)  │                    │  Read Model       │  │
+│          └───────────────┘                    │  (build views)    │  │
+│                  │                            └───────────────────┘  │
+│                  │ publish PaymentCompleted         │                │
+│                  ▼                                  ▼                │
+│          ┌───────────────┐                 ┌─────────────────┐      │
+│          │Shipping Svc   │                 │  Read DB        │      │
+│          │(ship order)   │                 │  (fast queries) │      │
+│          └───────────────┘                 └─────────────────┘      │
+└─────────────────────────────────────────────────────────────────────┘</pre>
+
+      <h4>Step-by-step flow — request to completion</h4>
+      <pre class="diagram">
+TIME    CLIENT          ORDER SVC       EVENT STORE      EVENT BUS       PAYMENT SVC     SHIPPING SVC    READ MODEL
+ │
+ │ ─── POST /orders ──►
+ │      (Command)       validate...
+ │                      create event
+ │                      ──────────────► APPEND
+ │                      (4)             events table:
+ │                                      id=1 type=ORDER_CREATED
+ │                                      data={orderId,total,items}
+ │                                      ────────────────────────────► OrderCreated
+ │                                      (5) publish                   (6) consume
+ │ ◄─── 202 Accepted ──                                               charge card...
+ │      (orderId)                                                      ──────────────────────────────────► UPSERT
+ │                                                                     APPEND                              order_view
+ │                                      ◄──────────────────────────── PaymentCompleted                    {status:PAID}
+ │                                      APPEND                        (7) publish
+ │                                      id=2 PAYMENT_COMPLETED        ────────────────────────────────────────────────► UPSERT
+ │                                      ────────────────────────────────────────────────► PaymentCompleted order_view
+ │                                                                                        (8) consume      {status:PAID}
+ │                                                                                        ship items...
+ │                                      ◄──────────────────────────────────────────────── OrderShipped
+ │                                      APPEND                        ◄────────────────── (9) publish
+ │                                      id=3 ORDER_SHIPPED            ────────────────────────────────────────────────► UPSERT
+ │                                      ────────────────────────────► OrderShipped        order_view
+ │                                                                                         {status:SHIPPED}
+ │
+ │ ─── GET /orders/1 ──────────────────────────────────────────────────────────────────────────────────────────────────►
+ │ ◄─── {status:SHIPPED, ...} ──────────────────────────────────────────────────────────────────────────────────────────</pre>
+
+      <h4>Code — each component in detail</h4>
+
+      <p><strong>① Event Store — append-only table in the database</strong></p>
+      <pre><span class="cm">-- Event Store schema (PostgreSQL)</span>
+<span class="kw">CREATE TABLE</span> events (
+  id          BIGSERIAL    <span class="kw">PRIMARY KEY</span>,
+  stream_id   VARCHAR(<span class="num">255</span>) <span class="kw">NOT NULL</span>,   <span class="cm">-- e.g. 'order-ORD-001'</span>
+  type        VARCHAR(<span class="num">100</span>) <span class="kw">NOT NULL</span>,   <span class="cm">-- e.g. 'ORDER_CREATED'</span>
+  data        JSONB        <span class="kw">NOT NULL</span>,   <span class="cm">-- full event payload</span>
+  version     INTEGER      <span class="kw">NOT NULL</span>,   <span class="cm">-- event sequence within the stream</span>
+  occurred_at TIMESTAMPTZ  <span class="kw">DEFAULT NOW</span>()
+);
+
+<span class="cm">-- After placing an order, the Event Store looks like:</span>
+<span class="cm">-- id | stream_id      | type               | data                           | version | occurred_at</span>
+<span class="cm">-- ---+----------------+--------------------+--------------------------------+---------+-------------</span>
+<span class="cm">--  1 | order-ORD-001  | ORDER_CREATED      | {orderId,userId,total,items}    |    1    | 09:00:00</span>
+<span class="cm">--  2 | order-ORD-001  | PAYMENT_COMPLETED  | {orderId,txId,amount}          |    2    | 09:00:45</span>
+<span class="cm">--  3 | order-ORD-001  | ORDER_SHIPPED      | {orderId,trackingNo,carrier}   |    3    | 11:30:00</span></pre>
+
+      <p><strong>② Order Service — receive Command, create &amp; store Event, publish to Bus</strong></p>
+      <pre><span class="cm">// order-service/src/index.js</span>
+app.<span class="fn">post</span>(<span class="str">'/orders'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { userId, items } = req.body
+  <span class="kw">const</span> orderId = `ORD-${<span class="cls">Date</span>.<span class="fn">now</span>()}`
+  <span class="kw">const</span> total   = items.<span class="fn">reduce</span>((s, i) => s + i.price * i.qty, <span class="num">0</span>)
+
+  <span class="cm">// ② Produce the Domain Event</span>
+  <span class="kw">const</span> event = {
+    streamId:   `order-${orderId}`,
+    type:       <span class="str">'ORDER_CREATED'</span>,
+    data:       { orderId, userId, total, items },
+    version:    <span class="num">1</span>,
+    occurredAt: <span class="kw">new</span> <span class="cls">Date</span>().<span class="fn">toISOString</span>()
+  }
+
+  <span class="cm">// ③ Append to Event Store (write to DB)</span>
+  <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'INSERT INTO events(stream_id, type, data, version) VALUES($1,$2,$3,$4)'</span>,
+    [event.streamId, event.type, event.data, event.version]
+  )
+
+  <span class="cm">// ④ Publish onto Event Bus for other services to consume</span>
+  <span class="kw">await</span> kafka.<span class="fn">publish</span>(<span class="str">'order-events'</span>, event)
+
+  <span class="cm">// ⑤ Return immediately — don't wait for payment or shipping</span>
+  res.<span class="fn">status</span>(<span class="num">202</span>).<span class="fn">json</span>({ orderId, status: <span class="str">'PENDING'</span>, message: <span class="str">'Order is being processed'</span> })
+})
+
+<span class="cm">// Rebuild order state from events (instead of SELECT from orders table)</span>
+<span class="kw">async function</span> <span class="fn">getOrderState</span>(orderId) {
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'SELECT * FROM events WHERE stream_id=$1 ORDER BY version ASC'</span>,
+    [`order-${orderId}`]
+  )
+  <span class="cm">// Replay all events → current state</span>
+  <span class="kw">return</span> rows.<span class="fn">reduce</span>((state, evt) => {
+    <span class="kw">switch</span> (evt.type) {
+      <span class="kw">case</span> <span class="str">'ORDER_CREATED'</span>:     <span class="kw">return</span> { ...state, ...evt.data, status: <span class="str">'PENDING'</span>   }
+      <span class="kw">case</span> <span class="str">'PAYMENT_COMPLETED'</span>: <span class="kw">return</span> { ...state, status: <span class="str">'PAID'</span>,    txId: evt.data.txId }
+      <span class="kw">case</span> <span class="str">'ORDER_SHIPPED'</span>:    <span class="kw">return</span> { ...state, status: <span class="str">'SHIPPED'</span>, trackingNo: evt.data.trackingNo }
+      <span class="kw">case</span> <span class="str">'ORDER_CANCELLED'</span>:  <span class="kw">return</span> { ...state, status: <span class="str">'CANCELLED'</span> }
+      <span class="kw">default</span>: <span class="kw">return</span> state
+    }
+  }, {})
+}</pre>
+
+      <p><strong>③ Payment Service — consume ORDER_CREATED, charge, append new event</strong></p>
+      <pre><span class="cm">// payment-service/src/consumer.js</span>
+kafka.<span class="fn">consume</span>(<span class="str">'order-events'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">if</span> (event.type !== <span class="str">'ORDER_CREATED'</span>) <span class="kw">return</span>  <span class="cm">// only care about this event type</span>
+
+  <span class="kw">const</span> { orderId, userId, total } = event.data
+  <span class="kw">try</span> {
+    <span class="kw">const</span> txId = <span class="kw">await</span> stripeClient.<span class="fn">charge</span>({ userId, amount: total })
+
+    <span class="kw">const</span> doneEvent = {
+      streamId: `order-${orderId}`,     <span class="cm">// same stream as Order!</span>
+      type:     <span class="str">'PAYMENT_COMPLETED'</span>,
+      data:     { orderId, txId, amount: total },
+      version:  <span class="num">2</span>
+    }
+    <span class="kw">await</span> db.<span class="fn">query</span>(
+      <span class="str">'INSERT INTO payment_events(stream_id,type,data,version) VALUES($1,$2,$3,$4)'</span>,
+      [doneEvent.streamId, doneEvent.type, doneEvent.data, doneEvent.version]
+    )
+    <span class="cm">// Publish so Shipping Service can continue</span>
+    <span class="kw">await</span> kafka.<span class="fn">publish</span>(<span class="str">'order-events'</span>, doneEvent)
+    console.<span class="fn">log</span>(<span class="str">`✅ PAYMENT_COMPLETED for order ${orderId}`</span>)
+
+  } <span class="kw">catch</span> (err) {
+    <span class="kw">const</span> failEvent = { streamId: `order-${orderId}`, type: <span class="str">'PAYMENT_FAILED'</span>, data: { orderId, reason: err.message }, version: <span class="num">2</span> }
+    <span class="kw">await</span> kafka.<span class="fn">publish</span>(<span class="str">'order-events'</span>, failEvent)
+  }
+})</pre>
+
+      <p><strong>④ Projection — listens to ALL events, builds a fast read-optimized view</strong></p>
+      <pre><span class="cm">// projection-service/src/consumer.js
+// Subscribes to every event → keeps the read model up to date</span>
+
+kafka.<span class="fn">consume</span>(<span class="str">'order-events'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">const</span> { orderId } = event.data
+
+  <span class="kw">switch</span> (event.type) {
+    <span class="kw">case</span> <span class="str">'ORDER_CREATED'</span>:
+      <span class="kw">await</span> readDb.<span class="fn">query</span>(<span class="str">`
+        INSERT INTO order_view(order_id, user_id, total, status, items, created_at)
+        VALUES($1, $2, $3, $4, $5, $6)
+      `</span>, [orderId, event.data.userId, event.data.total, <span class="str">'PENDING'</span>, <span class="cls">JSON</span>.<span class="fn">stringify</span>(event.data.items), event.occurredAt])
+      <span class="kw">break</span>
+
+    <span class="kw">case</span> <span class="str">'PAYMENT_COMPLETED'</span>:
+      <span class="kw">await</span> readDb.<span class="fn">query</span>(<span class="str">`
+        UPDATE order_view SET status='PAID', tx_id=$1, paid_at=$2 WHERE order_id=$3
+      `</span>, [event.data.txId, event.occurredAt, orderId])
+      <span class="kw">break</span>
+
+    <span class="kw">case</span> <span class="str">'ORDER_SHIPPED'</span>:
+      <span class="kw">await</span> readDb.<span class="fn">query</span>(<span class="str">`
+        UPDATE order_view SET status='SHIPPED', tracking_no=$1, shipped_at=$2 WHERE order_id=$3
+      `</span>, [event.data.trackingNo, event.occurredAt, orderId])
+      <span class="kw">break</span>
+
+    <span class="kw">case</span> <span class="str">'ORDER_CANCELLED'</span>:
+      <span class="kw">await</span> readDb.<span class="fn">query</span>(<span class="str">`
+        UPDATE order_view SET status='CANCELLED', cancelled_at=$1 WHERE order_id=$2
+      `</span>, [event.occurredAt, orderId])
+      <span class="kw">break</span>
+  }
+  <span class="cm">// After every event → order_view always reflects the latest state</span>
+})
+
+<span class="cm">// Simple query — no event replay needed, no JOINs</span>
+app.<span class="fn">get</span>(<span class="str">'/orders/:id'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> readDb.<span class="fn">query</span>(
+    <span class="str">'SELECT * FROM order_view WHERE order_id=$1'</span>, [req.params.id]
+  )
+  res.<span class="fn">json</span>(rows[<span class="num">0</span>])
+  <span class="cm">// → { order_id: 'ORD-001', status: 'SHIPPED', tracking_no: 'TK-5', ... }</span>
+})</pre>
+
+      <h4>Snapshots — optimization for large event streams</h4>
+      <p>If an order accumulates 1,000 events, replaying all of them on every read is slow. Solution: periodically save a <strong>Snapshot</strong> (the state at that point), then only replay events <em>after</em> the snapshot.</p>
+      <pre><span class="cm">// Instead of replaying events 1 → 1000...</span>
+<span class="kw">async function</span> <span class="fn">getOrderState</span>(orderId) {
+  <span class="cm">// 1. Fetch the most recent snapshot</span>
+  <span class="kw">const</span> snapshot = <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'SELECT * FROM snapshots WHERE stream_id=$1 ORDER BY version DESC LIMIT 1'</span>,
+    [`order-${orderId}`]
+  )
+  <span class="kw">const</span> fromVersion  = snapshot.rows[<span class="num">0</span>]?.version ?? <span class="num">0</span>
+  <span class="kw">const</span> initialState = snapshot.rows[<span class="num">0</span>]?.state    ?? {}
+
+  <span class="cm">// 2. Only replay events AFTER the snapshot (maybe just 5-10 events)</span>
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'SELECT * FROM events WHERE stream_id=$1 AND version>$2 ORDER BY version ASC'</span>,
+    [`order-${orderId}`, fromVersion]
+  )
+  <span class="kw">return</span> rows.<span class="fn">reduce</span>((state, evt) => <span class="fn">applyEvent</span>(state, evt), initialState)
+}</pre>
+
+      <div class="tbl"><table>
+        <thead><tr><th>Concept</th><th>Role</th><th>Stored in</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Event Store</strong></td><td>Durable, ordered, append-only log of all events</td><td>PostgreSQL, EventStoreDB</td></tr>
+          <tr><td><strong>Event Bus</strong></td><td>Distributes events to all interested consumers</td><td>Kafka, RabbitMQ</td></tr>
+          <tr><td><strong>Aggregate</strong></td><td>Receives Commands, validates, produces Domain Events</td><td>In-memory (per request)</td></tr>
+          <tr><td><strong>Projection</strong></td><td>Listens to Events, builds read-optimized views</td><td>PostgreSQL, Elasticsearch, Redis</td></tr>
+          <tr><td><strong>Snapshot</strong></td><td>State checkpoint — avoids replaying thousands of events</td><td>PostgreSQL, Redis</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+  <!-- 4.5 -->
+  <div class="topic" id="t45">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">4.5</div>
+      <div class="topic-meta"><h3>Cross-Service Queries in Practice</h3><div class="sub">Filter + Pagination across multiple services — Student &amp; Teacher example</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🎓 The Problem</div>
+        <p>The Admin dashboard has a feature: <em>Show a list of students and which teachers they are enrolled with — filterable by student name and teacher name, with pagination</em>. Student data lives in <strong>Student Service</strong>, teacher data lives in <strong>Teacher Service</strong>. How do you query this efficiently?</p>
+      </div>
+
+      <h4>Why the naive approach (API Composition) breaks with pagination</h4>
+      <pre class="diagram">
+❌ NAIVE APPROACH — BROKEN with Pagination
+
+Admin API receives: GET /admin/enrollments?student=A&teacher=B&page=2&size=10
+
+Step 1: Call Student Service → get all students whose name contains "A"
+         → [S1, S2, S3, ..., S500]  (500 results)
+
+Step 2: For EACH student, call Teacher Service to get their teacher
+         → 500 HTTP calls! (N+1 problem)
+
+Step 3: Filter to keep only pairs where teacher name contains "B"
+         → [S12, S45, S78, S120, S234, S301, ...] (say 47 pairs)
+
+Step 4: Now paginate: skip 10, take 10
+         → [S120, S234, ...]
+
+PROBLEMS:
+  ✗ 500 HTTP calls per request → extremely slow
+  ✗ Can't know total count without fetching everything → pagination is wrong
+  ✗ Doesn't scale (more data → more calls)
+  ✗ If Teacher Service is down → the whole page is down</pre>
+
+      <h4>Correct solution: CQRS Read Model — Materialized View</h4>
+      <p>Build a dedicated <strong>denormalized view table</strong> that aggregates data from both services. This table is automatically updated whenever events arrive from either the Student or Teacher service.</p>
+
+      <pre class="diagram">
+ARCHITECTURE OVERVIEW
+
+┌─────────────────┐    events    ┌──────────────────────────┐
+│  Student Service │ ──────────► │                          │
+│  (student DB)   │             │   Admin Query Service    │
+└─────────────────┘             │   (Projection Consumer)  │
+                                │                          │
+┌─────────────────┐    events    │   Listens to events from │
+│  Teacher Service │ ──────────► │   both services, builds  │
+│  (teacher DB)   │             │   and syncs view table   │
+└─────────────────┘             └────────────┬─────────────┘
+                                             │ read/write
+                                             ▼
+                                ┌──────────────────────────┐
+                                │  enrollment_view table   │
+                                │  (denormalized, flat)    │
+                                │                          │
+                                │  student_id              │
+                                │  student_name  ◄─ from   │
+                                │  student_email    Student │
+                                │  ─────────────────────── │
+                                │  teacher_id              │
+                                │  teacher_name  ◄─ from   │
+                                │  teacher_subject  Teacher│
+                                │  ─────────────────────── │
+                                │  enrolled_at             │
+                                └──────────────────────────┘
+                                             │
+                                             │ SELECT with filter + LIMIT/OFFSET
+                                             ▼
+                                ┌──────────────────────────┐
+                                │     Admin Frontend       │
+                                │  filter: A, B, page 2   │
+                                └──────────────────────────┘</pre>
+
+      <p><strong>① Denormalized view schema</strong></p>
+      <pre><span class="cm">-- Admin Query Service database
+-- This table is NOT the source of truth — read-only
+-- Can be fully rebuilt from events at any time</span>
+
+<span class="kw">CREATE TABLE</span> enrollment_view (
+  id             BIGSERIAL    <span class="kw">PRIMARY KEY</span>,
+
+  <span class="cm">-- Data from Student Service</span>
+  student_id     VARCHAR(<span class="num">50</span>)  <span class="kw">NOT NULL</span>,
+  student_name   VARCHAR(<span class="num">200</span>) <span class="kw">NOT NULL</span>,
+  student_email  VARCHAR(<span class="num">200</span>),
+  student_grade  VARCHAR(<span class="num">10</span>),
+
+  <span class="cm">-- Data from Teacher Service</span>
+  teacher_id     VARCHAR(<span class="num">50</span>)  <span class="kw">NOT NULL</span>,
+  teacher_name   VARCHAR(<span class="num">200</span>) <span class="kw">NOT NULL</span>,
+  teacher_subject VARCHAR(<span class="num">100</span>),
+  teacher_email  VARCHAR(<span class="num">200</span>),
+
+  <span class="cm">-- Metadata</span>
+  enrolled_at    TIMESTAMPTZ  <span class="kw">NOT NULL</span>,
+  updated_at     TIMESTAMPTZ  <span class="kw">DEFAULT NOW</span>(),
+
+  <span class="kw">UNIQUE</span>(student_id, teacher_id)  <span class="cm">-- one row per pair</span>
+);
+
+<span class="cm">-- Indexes for fast filtering</span>
+<span class="kw">CREATE INDEX</span> idx_student_name <span class="kw">ON</span> enrollment_view (<span class="kw">LOWER</span>(student_name));
+<span class="kw">CREATE INDEX</span> idx_teacher_name <span class="kw">ON</span> enrollment_view (<span class="kw">LOWER</span>(teacher_name));</pre>
+
+      <p><strong>② Query with filter + pagination — dead simple</strong></p>
+      <pre><span class="cm">// admin-query-service/src/routes/enrollment.js</span>
+
+app.<span class="fn">get</span>(<span class="str">'/admin/enrollments'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> {
+    student = <span class="str">''</span>,   <span class="cm">// filter by student name</span>
+    teacher = <span class="str">''</span>,   <span class="cm">// filter by teacher name</span>
+    page    = <span class="num">1</span>,
+    size    = <span class="num">10</span>
+  } = req.query
+
+  <span class="kw">const</span> offset = (page - <span class="num">1</span>) * size
+
+  <span class="cm">// Single query — filters, pagination, and total count all in one</span>
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+    SELECT
+      student_id, student_name, student_email, student_grade,
+      teacher_id, teacher_name, teacher_subject,
+      enrolled_at,
+      COUNT(*) OVER() AS total_count    -- total without an extra query
+    FROM enrollment_view
+    WHERE
+      LOWER(student_name) LIKE LOWER($1)
+      AND LOWER(teacher_name) LIKE LOWER($2)
+    ORDER BY enrolled_at DESC
+    LIMIT $3 OFFSET $4
+  `</span>, [`%${student}%`, `%${teacher}%`, size, offset])
+
+  <span class="kw">const</span> total = rows[<span class="num">0</span>]?.total_count ?? <span class="num">0</span>
+
+  res.<span class="fn">json</span>({
+    data:       rows,
+    pagination: {
+      page:       <span class="cls">Number</span>(page),
+      size:       <span class="cls">Number</span>(size),
+      total:      <span class="cls">Number</span>(total),
+      totalPages: <span class="cls">Math</span>.<span class="fn">ceil</span>(total / size),
+      hasNext:    page * size < total
+    }
+  })
+  <span class="cm">/* Response:
+  {
+    data: [
+      { student_name: "Alice", teacher_name: "Bob", enrolled_at: "..." },
+      ...
+    ],
+    pagination: { page: 2, size: 10, total: 47, totalPages: 5, hasNext: true }
+  } */</span>
+})</pre>
+
+      <h4>③ Event Consumers — how the view stays in sync automatically</h4>
+      <pre class="diagram">
+EVENT FLOW — when Student or Teacher Service changes
+
+Student Service:
+  StudentEnrolled   ──► enrollment_view: INSERT new row
+  StudentUnenrolled ──► enrollment_view: DELETE row
+  StudentUpdated    ──► enrollment_view: UPDATE student_name, email (all rows for that student)
+
+Teacher Service:
+  TeacherUpdated    ──► enrollment_view: UPDATE teacher_name, subject (all rows for that teacher)
+  TeacherDeleted    ──► enrollment_view: DELETE all rows for that teacher</pre>
+
+      <pre><span class="cm">// admin-query-service/src/consumers/student-consumer.js</span>
+
+kafka.<span class="fn">consume</span>(<span class="str">'student-events'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">switch</span> (event.type) {
+
+    <span class="kw">case</span> <span class="str">'STUDENT_ENROLLED'</span>: {
+      <span class="cm">// Student enrolled with a Teacher → INSERT into view
+      // We don't have teacher info yet → fetch from Teacher Service</span>
+      <span class="kw">const</span> teacher = <span class="kw">await</span> teacherServiceClient.<span class="fn">getTeacher</span>(event.data.teacherId)
+
+      <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+        INSERT INTO enrollment_view
+          (student_id, student_name, student_email, student_grade,
+           teacher_id, teacher_name, teacher_subject, teacher_email, enrolled_at)
+        VALUES ($1,$2,$3,$4, $5,$6,$7,$8, $9)
+        ON CONFLICT (student_id, teacher_id) DO NOTHING
+      `</span>, [
+        event.data.studentId, event.data.studentName, event.data.studentEmail, event.data.grade,
+        teacher.id, teacher.name, teacher.subject, teacher.email,
+        event.data.enrolledAt
+      ])
+      <span class="kw">break</span>
+    }
+
+    <span class="kw">case</span> <span class="str">'STUDENT_UNENROLLED'</span>: {
+      <span class="kw">await</span> db.<span class="fn">query</span>(
+        <span class="str">'DELETE FROM enrollment_view WHERE student_id=$1 AND teacher_id=$2'</span>,
+        [event.data.studentId, event.data.teacherId]
+      )
+      <span class="kw">break</span>
+    }
+
+    <span class="kw">case</span> <span class="str">'STUDENT_UPDATED'</span>: {
+      <span class="cm">// Update all rows for this student across the view</span>
+      <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+        UPDATE enrollment_view
+        SET student_name=$1, student_email=$2, student_grade=$3, updated_at=NOW()
+        WHERE student_id=$4
+      `</span>, [event.data.name, event.data.email, event.data.grade, event.data.studentId])
+      <span class="kw">break</span>
+    }
+  }
+})
+
+<span class="cm">// admin-query-service/src/consumers/teacher-consumer.js</span>
+kafka.<span class="fn">consume</span>(<span class="str">'teacher-events'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">switch</span> (event.type) {
+
+    <span class="kw">case</span> <span class="str">'TEACHER_UPDATED'</span>: {
+      <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+        UPDATE enrollment_view
+        SET teacher_name=$1, teacher_subject=$2, teacher_email=$3, updated_at=NOW()
+        WHERE teacher_id=$4
+      `</span>, [event.data.name, event.data.subject, event.data.email, event.data.teacherId])
+      <span class="kw">break</span>
+    }
+
+    <span class="kw">case</span> <span class="str">'TEACHER_DELETED'</span>: {
+      <span class="kw">await</span> db.<span class="fn">query</span>(
+        <span class="str">'DELETE FROM enrollment_view WHERE teacher_id=$1'</span>,
+        [event.data.teacherId]
+      )
+      <span class="kw">break</span>
+    }
+  }
+})</pre>
+
+      <h4>④ Rebuilding the view from scratch</h4>
+      <pre><span class="cm">// admin-query-service/src/scripts/rebuild-view.js
+// Run this script on first deploy or after a bug fix to rebuild the view</span>
+
+<span class="kw">async function</span> <span class="fn">rebuildEnrollmentView</span>() {
+  console.<span class="fn">log</span>(<span class="str">'🔄 Rebuilding enrollment_view...'</span>)
+  <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">'TRUNCATE enrollment_view'</span>)
+
+  <span class="kw">let</span> page = <span class="num">1</span>
+  <span class="kw">while</span> (<span class="kw">true</span>) {
+    <span class="kw">const</span> { data, hasNext } = <span class="kw">await</span> studentService.<span class="fn">getAllEnrollments</span>({ page, size: <span class="num">100</span> })
+
+    <span class="kw">for</span> (<span class="kw">const</span> enrollment <span class="kw">of</span> data) {
+      <span class="kw">const</span> teacher = <span class="kw">await</span> teacherService.<span class="fn">getTeacher</span>(enrollment.teacherId)
+      <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+        INSERT INTO enrollment_view
+          (student_id,student_name,student_email,student_grade,
+           teacher_id,teacher_name,teacher_subject,teacher_email,enrolled_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      `</span>, [
+        enrollment.studentId, enrollment.studentName, enrollment.email, enrollment.grade,
+        teacher.id, teacher.name, teacher.subject, teacher.email, enrollment.enrolledAt
+      ])
+    }
+    <span class="kw">if</span> (!hasNext) <span class="kw">break</span>
+    page++
+  }
+  console.<span class="fn">log</span>(<span class="str">'✅ Rebuild complete!'</span>)
+}</pre>
+
+      <div class="tbl"><table>
+        <thead><tr><th>Criteria</th><th>API Composition (naive)</th><th>CQRS Read Model ✅</th></tr></thead>
+        <tbody>
+          <tr><td>Accurate pagination</td><td>❌ Impossible — must fetch all to know total</td><td>✅ SQL LIMIT/OFFSET + COUNT(*) OVER()</td></tr>
+          <tr><td>Cross-service filtering</td><td>❌ Must filter in-memory after fetching</td><td>✅ SQL WHERE on a single table</td></tr>
+          <tr><td>Performance</td><td>❌ N+1 HTTP calls per request</td><td>✅ 1 SQL query</td></tr>
+          <tr><td>Service dependency at query time</td><td>❌ If one service is down, query fails</td><td>✅ Independent — data is pre-synced</td></tr>
+          <tr><td>Data freshness</td><td>✅ Always latest (real-time)</td><td>⚠️ Eventual consistent — ms to seconds delay</td></tr>
+          <tr><td>Complexity</td><td>✅ Simpler to set up</td><td>⚠️ Requires event consumers + view table</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="analogy">
+        <div class="analogy-title">💡 How to choose</div>
+        <p><strong>Use API Composition when:</strong> merging just 2-3 simple objects, no cross-service filtering needed, no strict pagination.<br><br>
+        <strong>Use CQRS Read Model when:</strong> filtering spans multiple services, accurate pagination is required, data is queried frequently, or high performance is needed.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 5 ─────────── -->
+<div class="part-panel" id="p5">
+  <div class="part-header">
+    <div class="part-badge">Part 5</div>
+    <h1>Docker &amp; Kubernetes</h1>
+    <p>Package your apps to run anywhere (Docker), then manage them at scale (Kubernetes).</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">5.1</div>
+      <div class="topic-meta"><h3>Docker Basics</h3><div class="sub">Package your app and its dependencies into a container</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">📦 Analogy</div>
+        <p><strong>Docker Image</strong> = A recipe. <strong>Docker Container</strong> = A meal cooked from that recipe. From one Image you can run many Containers. Containers run identically on any machine with Docker installed — no more "works on my machine" problem.</p>
+      </div>
+
+      <h4>Dockerfile — the recipe for packaging your app</h4>
+      <pre><span class="cm"># Dockerfile for a Node.js service</span>
+<span class="kw">FROM</span> node:<span class="num">18</span>-alpine        <span class="cm"># Start from the official Node.js 18 image</span>
+
+<span class="kw">WORKDIR</span> /app              <span class="cm"># Working directory inside the container</span>
+
+<span class="kw">COPY</span> package*.json ./     <span class="cm"># Copy package files</span>
+<span class="kw">RUN</span> npm install           <span class="cm"># Install dependencies</span>
+
+<span class="kw">COPY</span> . .                  <span class="cm"># Copy all source code</span>
+
+<span class="kw">EXPOSE</span> <span class="num">3000</span>               <span class="cm"># Declare the port this service listens on</span>
+<span class="kw">CMD</span> [<span class="str">"node"</span>, <span class="str">"src/index.js"</span>]  <span class="cm"># Command to run when container starts</span></pre>
+
+      <h4>Docker Compose — run multiple containers together</h4>
+      <pre><span class="cm"># docker-compose.yml</span>
+version: <span class="str">'3.8'</span>
+services:
+  order-service:
+    build: ./order-service
+    ports: [<span class="str">"3002:3002"</span>]
+    environment:
+      - DB_HOST=order-db
+    depends_on: [order-db, rabbitmq]
+
+  order-db:
+    image: postgres:<span class="num">15</span>
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_PASSWORD: secret
+
+  rabbitmq:
+    image: rabbitmq:<span class="num">3</span>-management
+    ports:
+      - <span class="str">"5672:5672"</span>    <span class="cm"># connection port</span>
+      - <span class="str">"15672:15672"</span>  <span class="cm"># management web UI</span></pre>
+
+      <h4>Frequently used Docker commands</h4>
+      <pre>docker build -t my-app .          <span class="cm"># Build an image from Dockerfile</span>
+docker run -p 3000:3000 my-app    <span class="cm"># Run a container</span>
+docker ps                         <span class="cm"># List running containers</span>
+docker logs &lt;container-id&gt;        <span class="cm"># View container logs</span>
+docker-compose up -d              <span class="cm"># Start all services in background</span>
+docker-compose down               <span class="cm"># Stop all services</span></pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">5.2</div>
+      <div class="topic-meta"><h3>Container Orchestration with Kubernetes (K8s)</h3><div class="sub">Managing containers at scale</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🚢 Analogy</div>
+        <p><strong>Docker</strong> = Shipping containers (standardize how you package cargo). <strong>Kubernetes</strong> = An automated port/harbor (manages thousands of containers: scheduling, health checking, auto-restarting, scaling). When a container (pod) crashes, K8s automatically creates a replacement.</p>
+      </div>
+
+      <div class="tbl"><table>
+        <thead><tr><th>K8s Concept</th><th>What it is</th><th>Analogy</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Pod</strong></td><td>Smallest deployable unit, holds 1+ containers</td><td>A room in a building</td></tr>
+          <tr><td><strong>Deployment</strong></td><td>Manages replicas, handles rolling updates</td><td>Building policy: "always keep 3 rooms available"</td></tr>
+          <tr><td><strong>Service</strong></td><td>Internal load balancer with a stable DNS name</td><td>A fixed phone number even if rooms change</td></tr>
+          <tr><td><strong>Ingress</strong></td><td>HTTP routing from outside the cluster</td><td>The front door of the building</td></tr>
+          <tr><td><strong>ConfigMap</strong></td><td>Non-sensitive configuration</td><td>A public notice board</td></tr>
+          <tr><td><strong>Secret</strong></td><td>Sensitive data (passwords, API keys)</td><td>A safe</td></tr>
+          <tr><td><strong>HPA</strong></td><td>Horizontal Pod Autoscaler — auto-scale based on load</td><td>Automatically hiring staff when busy</td></tr>
+        </tbody>
+      </table></div>
+
+      <pre><span class="cm"># deployment.yaml — deploy order-service with 3 replicas</span>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: <span class="num">3</span>
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    spec:
+      containers:
+      - name: order-service
+        image: myregistry/order-service:<span class="num">1.0</span>
+        ports:
+        - containerPort: <span class="num">3002</span>
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: password</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">5.3</div>
+      <div class="topic-meta"><h3>Service Mesh</h3><div class="sub">Istio / Linkerd — infrastructure layer for microservices</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🕸️ Analogy</div>
+        <p>A Service Mesh is like the electrical wiring in a building — you don't care how it works, you just plug in and get power. Similarly, a Service Mesh handles mTLS, retries, circuit breaking, and metrics automatically — your code doesn't need to implement any of it.</p>
+      </div>
+
+      <div class="tbl"><table>
+        <thead><tr><th>Capability</th><th>Without Service Mesh</th><th>With Istio / Linkerd</th></tr></thead>
+        <tbody>
+          <tr><td><strong>mTLS</strong> (mutual TLS)</td><td>Must implement in every service</td><td>Automatic, zero code changes</td></tr>
+          <tr><td><strong>Retry &amp; Timeout</strong></td><td>Library + code in every service</td><td>Declarative YAML config</td></tr>
+          <tr><td><strong>Circuit Breaker</strong></td><td>Library + code in every service</td><td>Declarative YAML config</td></tr>
+          <tr><td><strong>Distributed Tracing</strong></td><td>Manual instrumentation in code</td><td>Automatic sidecar injection</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><p>💡 A Service Mesh is great when you have many services and want to standardize cross-cutting concerns. For fewer than 5 services, it may be overkill.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 6 ─────────── -->
+<div class="part-panel" id="p6">
+  <div class="part-header">
+    <div class="part-badge">Part 6</div>
+    <h1>Monitoring &amp; Logging</h1>
+    <p>The three pillars of observability: Metrics, Logs, and Traces — know when something is wrong.</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">6.1</div>
+      <div class="topic-meta"><h3>Centralized Logging</h3><div class="sub">Aggregate logs from all services in one place</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">📋 Analogy</div>
+        <p>With 20 services each writing to their own log files, debugging means SSH-ing into server after server to hunt for clues. Centralized Logging = pull all logs into one place and search them like Google.</p>
+      </div>
+
+      <pre class="diagram">
+User Service     → [Log shipper] ─┐
+Order Service    → [Log shipper] ─┤→ [Elasticsearch] → [Kibana UI]
+Payment Service  → [Log shipper] ─┘
+                                    (search, filter, dashboard)</pre>
+
+      <h4>Structured Logging — mandatory in microservices</h4>
+      <pre><span class="cm">// ❌ Bad: plain text — hard to search programmatically</span>
+console.<span class="fn">log</span>(<span class="str">'Error: payment failed for user 123 order 456'</span>)
+
+<span class="cm">// ✓ Good: structured JSON — easy to filter and query</span>
+<span class="kw">const</span> winston = <span class="fn">require</span>(<span class="str">'winston'</span>)
+<span class="kw">const</span> logger  = winston.<span class="fn">createLogger</span>({ format: winston.format.<span class="fn">json</span>() })
+
+logger.<span class="fn">error</span>(<span class="str">'Payment failed'</span>, {
+  service:   <span class="str">'payment-service'</span>,
+  traceId:   req.headers[<span class="str">'x-trace-id'</span>],
+  userId:    <span class="num">123</span>,
+  orderId:   <span class="num">456</span>,
+  errorCode: <span class="str">'INSUFFICIENT_FUNDS'</span>,
+  duration:  <span class="num">234</span>  <span class="cm">// ms</span>
+})</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">6.2</div>
+      <div class="topic-meta"><h3>Distributed Tracing</h3><div class="sub">Follow a single request across multiple services</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🕵️ Analogy</div>
+        <p>A request passes through 5 services and takes 2 seconds total. Which service is slow? Distributed Tracing attaches a "GPS tracker" to each request, recording exactly how long each service takes — like a journey map.</p>
+      </div>
+      <pre><span class="cm">// Middleware: create or forward Trace ID across all services</span>
+app.<span class="fn">use</span>((req, res, next) => {
+  <span class="kw">const</span> traceId = req.headers[<span class="str">'x-trace-id'</span>] || <span class="fn">generateId</span>()
+  req.traceId = traceId
+  res.<span class="fn">set</span>(<span class="str">'x-trace-id'</span>, traceId)
+
+  <span class="cm">// When calling another service, ALWAYS forward the trace ID</span>
+  axios.<span class="fn">get</span>(<span class="str">'http://inventory-service/stock'</span>, {
+    headers: { <span class="str">'x-trace-id'</span>: traceId }
+  })
+  <span class="fn">next</span>()
+})</pre>
+
+      <pre class="diagram">
+Trace ID: abc-123 ("Place Order" request)
+│
+├── [API Gateway]          0ms →   5ms   (5ms)
+│   ├── [Order Service]    5ms → 150ms  (145ms)
+│   │   ├── [DB Query]    10ms →  50ms   (40ms)
+│   │   └── [Payment Svc] 60ms → 140ms   (80ms) ← slow!
+│   └── [Inventory Svc]  150ms → 170ms   (20ms)
+└── Total: 170ms</pre>
+      <p><strong>Tools:</strong> Jaeger (open-source), Zipkin, OpenTelemetry (the standard), AWS X-Ray</p>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">6.3</div>
+      <div class="topic-meta"><h3>Health Checks &amp; Monitoring</h3><div class="sub">Is this service alive? Is it ready for traffic?</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre><span class="cm">// /health endpoint — every service should expose this</span>
+app.<span class="fn">get</span>(<span class="str">'/health'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> checks = {
+    database: <span class="kw">await</span> <span class="fn">checkDatabase</span>(),
+    rabbitmq: <span class="kw">await</span> <span class="fn">checkRabbitMQ</span>(),
+    redis:    <span class="kw">await</span> <span class="fn">checkRedis</span>()
+  }
+  <span class="kw">const</span> healthy = <span class="cls">Object</span>.<span class="fn">values</span>(checks).<span class="fn">every</span>(v => v === <span class="str">'ok'</span>)
+  res.<span class="fn">status</span>(healthy ? <span class="num">200</span> : <span class="num">503</span>).<span class="fn">json</span>({
+    status: healthy ? <span class="str">'healthy'</span> : <span class="str">'unhealthy'</span>,
+    checks,
+    uptime: process.<span class="fn">uptime</span>()
+  })
+})</pre>
+
+      <div class="tbl"><table>
+        <thead><tr><th>Kubernetes Probe</th><th>Question asked</th><th>Failure action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Liveness Probe</strong></td><td>"Is the service alive?"</td><td>K8s restarts the pod</td></tr>
+          <tr><td><strong>Readiness Probe</strong></td><td>"Is the service ready for traffic?"</td><td>K8s stops sending traffic (no restart)</td></tr>
+          <tr><td><strong>Startup Probe</strong></td><td>"Has the service finished starting up?"</td><td>K8s waits longer before checking liveness</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">6.4</div>
+      <div class="topic-meta"><h3>Metrics &amp; Alerting</h3><div class="sub">Prometheus + Grafana — collect and visualize numbers</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre class="diagram">
+Services expose /metrics endpoint
+           ↓
+[Prometheus] scrapes every 15s
+           ↓
+[Grafana] reads Prometheus → dashboards
+           ↓
+[Alertmanager] fires alerts when thresholds breached → Slack/PagerDuty</pre>
+
+      <h4>The Four Golden Signals</h4>
+      <div class="tbl"><table>
+        <thead><tr><th>Signal</th><th>What it measures</th><th>Example alert threshold</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Latency</strong></td><td>How long does a request take?</td><td>Alert when p99 &gt; 1s</td></tr>
+          <tr><td><strong>Traffic</strong></td><td>How many requests per second?</td><td>Alert when &lt; 10 req/s (unexpected drop)</td></tr>
+          <tr><td><strong>Errors</strong></td><td>What percentage of requests fail?</td><td>Alert when error rate &gt; 1%</td></tr>
+          <tr><td><strong>Saturation</strong></td><td>How full is the system?</td><td>Alert when CPU &gt; 80%</td></tr>
+        </tbody>
+      </table></div>
+
+      <pre><span class="cm">// Expose Prometheus metrics in Node.js</span>
+<span class="kw">const</span> promClient = <span class="fn">require</span>(<span class="str">'prom-client'</span>)
+
+<span class="kw">const</span> httpDuration = <span class="kw">new</span> promClient.<span class="cls">Histogram</span>({
+  name:       <span class="str">'http_request_duration_seconds'</span>,
+  help:       <span class="str">'Duration of HTTP requests in seconds'</span>,
+  labelNames: [<span class="str">'method'</span>, <span class="str">'route'</span>, <span class="str">'status'</span>],
+  buckets:    [<span class="num">0.1</span>, <span class="num">0.5</span>, <span class="num">1</span>, <span class="num">2</span>, <span class="num">5</span>]
+})
+
+app.<span class="fn">get</span>(<span class="str">'/metrics'</span>, <span class="kw">async</span> (req, res) => {
+  res.<span class="fn">set</span>(<span class="str">'Content-Type'</span>, promClient.register.contentType)
+  res.<span class="fn">end</span>(<span class="kw">await</span> promClient.register.<span class="fn">metrics</span>())
+})</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 7 ─────────── -->
+<div class="part-panel" id="p7">
+  <div class="part-header">
+    <div class="part-badge">Part 7</div>
+    <h1>Testing Microservices</h1>
+    <p>From tiny unit tests to full end-to-end flows — each layer serves a different purpose.</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">▼</div>
+      <div class="topic-meta"><h3>The Testing Pyramid</h3><div class="sub">The guiding principle for test strategy</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre class="diagram">
+             ▲  E2E Tests     (few, slow, expensive — test full system)
+            ▲▲▲ Integration   (moderate — test real DB, real services)
+           ▲▲▲▲▲ Unit Tests   (many, fast, cheap — test one function)
+Rule: Maximize unit tests. Minimize E2E tests.</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">7.1</div>
+      <div class="topic-meta"><h3>Unit Testing</h3><div class="sub">Test one function/class in isolation</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <p>Test a single function, <strong>mocking</strong> (faking) all external dependencies (DB, APIs, queues).</p>
+      <pre><span class="cm">// orderService.js</span>
+<span class="kw">class</span> <span class="cls">OrderService</span> {
+  <span class="kw">constructor</span>(orderRepo) { <span class="kw">this</span>.orderRepo = orderRepo }
+
+  <span class="kw">async</span> <span class="fn">createOrder</span>(userId, items) {
+    <span class="kw">if</span> (items.length === <span class="num">0</span>) <span class="kw">throw new</span> <span class="cls">Error</span>(<span class="str">'Cart is empty'</span>)
+    <span class="kw">const</span> total = items.<span class="fn">reduce</span>((sum, i) => sum + i.price * i.qty, <span class="num">0</span>)
+    <span class="kw">return</span> <span class="kw">await</span> <span class="kw">this</span>.orderRepo.<span class="fn">save</span>({ userId, items, total, status: <span class="str">'PENDING'</span> })
+  }
+}
+
+<span class="cm">// orderService.test.js (Jest)</span>
+<span class="fn">describe</span>(<span class="str">'OrderService'</span>, () => {
+  <span class="kw">let</span> service, mockRepo
+
+  <span class="fn">beforeEach</span>(() => {
+    <span class="cm">// Mock the repository — no real database needed</span>
+    mockRepo = { save: jest.<span class="fn">fn</span>().<span class="fn">mockResolvedValue</span>({ id: <span class="num">1</span>, status: <span class="str">'PENDING'</span> }) }
+    service = <span class="kw">new</span> <span class="cls">OrderService</span>(mockRepo)
+  })
+
+  <span class="fn">test</span>(<span class="str">'creates order successfully'</span>, <span class="kw">async</span> () => {
+    <span class="kw">const</span> items  = [{ price: <span class="num">10</span>, qty: <span class="num">2</span> }]
+    <span class="kw">const</span> result = <span class="kw">await</span> service.<span class="fn">createOrder</span>(<span class="str">'u1'</span>, items)
+    <span class="fn">expect</span>(result.status).<span class="fn">toBe</span>(<span class="str">'PENDING'</span>)
+    <span class="fn">expect</span>(mockRepo.save).<span class="fn">toHaveBeenCalledWith</span>(
+      <span class="fn">expect</span>.<span class="fn">objectContaining</span>({ total: <span class="num">20</span> })
+    )
+  })
+
+  <span class="fn">test</span>(<span class="str">'throws when cart is empty'</span>, <span class="kw">async</span> () => {
+    <span class="kw">await</span> <span class="fn">expect</span>(service.<span class="fn">createOrder</span>(<span class="str">'u1'</span>, []))
+      .<span class="fn">rejects</span>.<span class="fn">toThrow</span>(<span class="str">'Cart is empty'</span>)
+  })
+})</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">7.2</div>
+      <div class="topic-meta"><h3>Integration Testing</h3><div class="sub">Test real interactions with databases, queues, and caches</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <p>Test the service with <strong>real infrastructure</strong> — no mocking of DB, no mocking of queues.</p>
+      <pre><span class="cm">// Using testcontainers to spin up a real PostgreSQL instance in tests</span>
+<span class="kw">const</span> { PostgreSqlContainer } = <span class="fn">require</span>(<span class="str">'@testcontainers/postgresql'</span>)
+
+<span class="fn">describe</span>(<span class="str">'Order API — Integration'</span>, () => {
+  <span class="kw">let</span> container, app
+
+  <span class="fn">beforeAll</span>(<span class="kw">async</span> () => {
+    container = <span class="kw">await</span> <span class="kw">new</span> <span class="cls">PostgreSqlContainer</span>().<span class="fn">start</span>()
+    app = <span class="kw">await</span> <span class="fn">startApp</span>(container.<span class="fn">getConnectionUri</span>())
+  })
+
+  <span class="fn">test</span>(<span class="str">'POST /orders stores order in DB'</span>, <span class="kw">async</span> () => {
+    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">request</span>(app)
+      .<span class="fn">post</span>(<span class="str">'/orders'</span>)
+      .<span class="fn">send</span>({ userId: <span class="str">'u1'</span>, items: [{ productId: <span class="str">'p1'</span>, qty: <span class="num">1</span>, price: <span class="num">50</span> }] })
+    <span class="fn">expect</span>(res.status).<span class="fn">toBe</span>(<span class="num">201</span>)
+    <span class="cm">// Verify it was actually persisted</span>
+    <span class="kw">const</span> order = <span class="kw">await</span> <span class="fn">db</span>.<span class="fn">query</span>(<span class="str">'SELECT * FROM orders WHERE id = $1'</span>, [res.body.id])
+    <span class="fn">expect</span>(order.rows[<span class="num">0</span>].status).<span class="fn">toBe</span>(<span class="str">'PENDING'</span>)
+  })
+
+  <span class="fn">afterAll</span>(<span class="kw">async</span> () => <span class="kw">await</span> container.<span class="fn">stop</span>())
+})</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">7.3</div>
+      <div class="topic-meta"><h3>Contract Testing</h3><div class="sub">Ensure two services speak the same language</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">📄 Analogy</div>
+        <p>Order Service (consumer) and Payment Service (provider) sign a "contract": "Payment API accepts an <code>amount</code> (integer) and returns a <code>transactionId</code> (string)". Contract tests verify both sides honor this agreement — catching breaking changes before deployment.</p>
+      </div>
+      <p><strong>Tool:</strong> <a href="https://pact.io" style="color:var(--primary);">Pact</a> — the consumer writes the contract first. The provider runs tests to verify it fulfills the contract.</p>
+      <div class="note"><p>💡 Contract testing catches API breaking changes early — before they hit staging or production.</p></div>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">7.4</div>
+      <div class="topic-meta"><h3>End-to-End Testing</h3><div class="sub">Test the full system as a real user</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <p>Tests the complete flow: click a button in the UI → through API Gateway → through services → database → response shown on screen.</p>
+      <pre><span class="cm">// E2E test with Playwright</span>
+<span class="fn">test</span>(<span class="str">'Complete order placement flow'</span>, <span class="kw">async</span> ({ page }) => {
+  <span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'http://localhost:3000'</span>)
+  <span class="kw">await</span> page.<span class="fn">click</span>(<span class="str">'text=Add to cart'</span>)
+  <span class="kw">await</span> page.<span class="fn">click</span>(<span class="str">'text=Place order'</span>)
+  <span class="kw">await</span> page.<span class="fn">fill</span>(<span class="str">'[name=cardNumber]'</span>, <span class="str">'4111111111111111'</span>)
+  <span class="kw">await</span> page.<span class="fn">click</span>(<span class="str">'text=Confirm payment'</span>)
+  <span class="kw">await</span> <span class="fn">expect</span>(page.<span class="fn">locator</span>(<span class="str">'.order-success'</span>)).<span class="fn">toBeVisible</span>()
+})</pre>
+      <div class="warn"><p>⚠️ E2E tests are slow, brittle (break when UI changes), and resource-intensive. Write them only for your most critical business flows.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 8 ─────────── -->
+<div class="part-panel" id="p8">
+  <div class="part-header">
+    <div class="part-badge">Part 8</div>
+    <h1>Deployment &amp; CI/CD</h1>
+    <p>How to ship code continuously and safely — zero-downtime deployments.</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">8.1</div>
+      <div class="topic-meta"><h3>CI/CD Pipeline</h3><div class="sub">Continuous Integration / Continuous Deployment</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="tbl"><table>
+        <thead><tr><th>Concept</th><th>Meaning</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><strong>CI</strong> (Continuous Integration)</td><td>Every code push triggers an automatic build + test</td><td>Push code → GitHub Actions runs tests immediately</td></tr>
+          <tr><td><strong>CD</strong> (Continuous Deployment)</td><td>After CI passes → automatically deploy</td><td>Tests pass → auto-deploy to staging</td></tr>
+        </tbody>
+      </table></div>
+
+      <pre><span class="cm"># .github/workflows/order-service.yml</span>
+name: Order Service CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths: [<span class="str">'order-service/**'</span>]  <span class="cm"># only trigger on changes to this service</span>
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: npm ci
+        working-directory: order-service
+      - run: npm test
+        working-directory: order-service
+
+  build-and-deploy:
+    needs: test             <span class="cm"># only runs if test job passes</span>
+    steps:
+      - name: Build Docker image
+        run: docker build -t myapp/order-service:${{ github.sha }} ./order-service
+
+      - name: Push to registry
+        run: docker push myapp/order-service:${{ github.sha }}
+
+      - name: Deploy to Kubernetes
+        run: kubectl set image deployment/order-service \
+             order-service=myapp/order-service:${{ github.sha }}</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">8.2</div>
+      <div class="topic-meta"><h3>Blue-Green Deployments</h3><div class="sub">Two identical environments — instant traffic switch</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🎨 Analogy</div>
+        <p>Two identical environments: Blue (running v1) and Green (ready for v2). Deploy v2 to Green, test thoroughly. When confident → switch all traffic to Green. Rollback = switch back to Blue. Zero downtime.</p>
+      </div>
+      <pre class="diagram">
+Before deploy:
+Load Balancer → [Blue: v1] (100% traffic)
+               [Green: idle]
+
+Deploy v2 to Green:
+Load Balancer → [Blue: v1] (100% traffic — users unaffected)
+               [Green: v2] (test in production-like env)
+
+Switch traffic:
+Load Balancer → [Blue: v1] (0% — kept as rollback)
+               [Green: v2] (100% traffic)</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">8.3</div>
+      <div class="topic-meta"><h3>Canary Releases</h3><div class="sub">Gradually roll out to a subset of users first</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🐦 Analogy</div>
+        <p>Coal miners used to carry canary birds underground — if the canary died, it signaled dangerous gas and miners would evacuate. A canary release: deploy the new version to 5% of users first. If no problems emerge → expand to 25% → 50% → 100%.</p>
+      </div>
+      <pre class="diagram">
+Step 1: v2 deployed to 5% of users   (95% v1, 5% v2)
+        → monitor error rate and latency
+Step 2: All good → 25%               (75% v1, 25% v2)
+Step 3: 50%                          (50% v1, 50% v2)
+Step 4: 100%                         (0% v1, 100% v2)
+Any problem: immediately roll back to 0%</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">8.4</div>
+      <div class="topic-meta"><h3>Feature Toggles</h3><div class="sub">Deploy code without releasing the feature</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">🔦 Analogy</div>
+        <p>A light switch: install the new bulb (deploy code), but keep the switch OFF (feature not released). When you're ready — flip the switch. No redeployment needed.</p>
+      </div>
+      <pre><span class="cm">// Feature flags — can be stored in Redis/DB for runtime changes without redeployment</span>
+<span class="kw">const</span> features = {
+  <span class="str">'new-checkout-flow'</span>:  { enabled: <span class="kw">true</span>,  rollout: <span class="num">0.1</span> },  <span class="cm">// on for 10% of users</span>
+  <span class="str">'ai-recommendations'</span>: { enabled: <span class="kw">false</span>, rollout: <span class="num">0</span>   },  <span class="cm">// completely off</span>
+}
+
+<span class="kw">function</span> <span class="fn">isEnabled</span>(feature, userId) {
+  <span class="kw">const</span> flag = features[feature]
+  <span class="kw">if</span> (!flag?.enabled) <span class="kw">return false</span>
+  <span class="cm">// Hash userId to ensure consistent experience for the same user</span>
+  <span class="kw">return</span> <span class="fn">hash</span>(userId) % <span class="num">100</span> &lt; flag.rollout * <span class="num">100</span>
+}
+
+<span class="kw">if</span> (<span class="fn">isEnabled</span>(<span class="str">'new-checkout-flow'</span>, req.userId)) {
+  <span class="kw">return</span> <span class="fn">newCheckoutFlow</span>(req)
+} <span class="kw">else</span> {
+  <span class="kw">return</span> <span class="fn">legacyCheckoutFlow</span>(req)
+}</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PART 9 ─────────── -->
+<div class="part-panel" id="p9">
+  <div class="part-header">
+    <div class="part-badge">Part 9</div>
+    <h1>Security</h1>
+    <p>From authentication to network-level protection — build with a Zero Trust mindset.</p>
+  </div>
+
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">9.1</div>
+      <div class="topic-meta"><h3>Authentication &amp; Authorization</h3><div class="sub">Who are you? What are you allowed to do?</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>Authentication</th><th>Authorization</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Question</strong></td><td>"Who are you?"</td><td>"What are you allowed to do?"</td></tr>
+          <tr><td><strong>Example</strong></td><td>Login with username/password</td><td>Regular users can view; Admins can delete</td></tr>
+          <tr><td><strong>Tools</strong></td><td>JWT, OAuth2, OpenID Connect</td><td>RBAC (Role-Based), ABAC</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>How JWT works</h4>
+      <pre><span class="cm">// JWT = Header.Payload.Signature (base64 encoded)
+// eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiIxMjMifQ.abc123</span>
+
+<span class="cm">// ── Auth Service: Issue JWT on login ──</span>
+app.<span class="fn">post</span>(<span class="str">'/login'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> user = <span class="kw">await</span> <span class="fn">validateCredentials</span>(req.body)
+  <span class="kw">if</span> (!user) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">401</span>).<span class="fn">json</span>({ error: <span class="str">'Invalid credentials'</span> })
+
+  <span class="kw">const</span> token = jwt.<span class="fn">sign</span>(
+    { userId: user.id, role: user.role },  <span class="cm">// payload</span>
+    process.env.JWT_SECRET,               <span class="cm">// secret key</span>
+    { expiresIn: <span class="str">'15m'</span> }               <span class="cm">// short-lived access token</span>
+  )
+  res.<span class="fn">json</span>({ accessToken: token })
+})
+
+<span class="cm">// ── JWT verification middleware (reuse in every service) ──</span>
+<span class="kw">function</span> <span class="fn">authenticate</span>(req, res, next) {
+  <span class="kw">const</span> token = req.headers.authorization?.split(<span class="str">' '</span>)[<span class="num">1</span>]  <span class="cm">// "Bearer &lt;token&gt;"</span>
+  <span class="kw">if</span> (!token) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">401</span>).<span class="fn">json</span>({ error: <span class="str">'Missing token'</span> })
+  <span class="kw">try</span> { req.user = jwt.<span class="fn">verify</span>(token, process.env.JWT_SECRET); <span class="fn">next</span>() }
+  <span class="kw">catch</span> { res.<span class="fn">status</span>(<span class="num">401</span>).<span class="fn">json</span>({ error: <span class="str">'Invalid token'</span> }) }
+}
+
+<span class="cm">// ── RBAC: restrict by role ──</span>
+<span class="kw">const</span> <span class="fn">requireRole</span> = (role) => (req, res, next) => {
+  <span class="kw">if</span> (req.user.role !== role) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">403</span>).<span class="fn">json</span>({ error: <span class="str">'Forbidden'</span> })
+  <span class="fn">next</span>()
+}
+
+app.<span class="fn">delete</span>(<span class="str">'/orders/:id'</span>, authenticate, <span class="fn">requireRole</span>(<span class="str">'admin'</span>), deleteOrder)</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">9.2</div>
+      <div class="topic-meta"><h3>API Security</h3><div class="sub">HTTPS, Rate Limiting, Input Validation</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre><span class="kw">const</span> rateLimit = <span class="fn">require</span>(<span class="str">'express-rate-limit'</span>)
+<span class="kw">const</span> helmet    = <span class="fn">require</span>(<span class="str">'helmet'</span>)
+<span class="kw">const</span> { body, validationResult } = <span class="fn">require</span>(<span class="str">'express-validator'</span>)
+
+<span class="cm">// 1. Helmet: automatically set security-related HTTP headers</span>
+app.<span class="fn">use</span>(<span class="fn">helmet</span>())
+
+<span class="cm">// 2. Rate Limiting: protect against abuse and DDoS</span>
+app.<span class="fn">use</span>(<span class="fn">rateLimit</span>({
+  windowMs: <span class="num">15</span> * <span class="num">60</span> * <span class="num">1000</span>,  <span class="cm">// 15-minute window</span>
+  max: <span class="num">100</span>,                   <span class="cm">// 100 requests per window</span>
+  message: <span class="str">'Too many requests, please try again later'</span>
+}))
+
+<span class="cm">// 3. Input Validation: never trust user input</span>
+app.<span class="fn">post</span>(<span class="str">'/orders'</span>, [
+  body(<span class="str">'userId'</span>).<span class="fn">isUUID</span>(),
+  body(<span class="str">'items'</span>).<span class="fn">isArray</span>({ min: <span class="num">1</span> }),
+  body(<span class="str">'items.*.price'</span>).<span class="fn">isFloat</span>({ min: <span class="num">0</span> }),
+], (req, res) => {
+  <span class="kw">const</span> errors = <span class="fn">validationResult</span>(req)
+  <span class="kw">if</span> (!errors.<span class="fn">isEmpty</span>()) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">400</span>).<span class="fn">json</span>({ errors: errors.<span class="fn">array</span>() })
+  <span class="cm">// proceed with processing...</span>
+})</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">9.3</div>
+      <div class="topic-meta"><h3>Secrets Management</h3><div class="sub">Passwords, API keys — never hardcode them</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="danger"><p>🚨 <strong>NEVER</strong> hardcode passwords, API keys, or secrets in code. Never commit <code>.env</code> files to Git.</p></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Method</th><th>Pros</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Environment Variables</strong> (.env)</td><td>Simple, widely supported</td><td>Development, small apps</td></tr>
+          <tr><td><strong>Kubernetes Secrets</strong></td><td>Native K8s, encrypted in etcd</td><td>Kubernetes deployments</td></tr>
+          <tr><td><strong>HashiCorp Vault</strong></td><td>Audit logs, automatic rotation, fine-grained access</td><td>Production, enterprise</td></tr>
+          <tr><td><strong>AWS Secrets Manager</strong></td><td>Managed service, AWS native</td><td>AWS-based deployments</td></tr>
+        </tbody>
+      </table></div>
+      <pre><span class="cm"># .env — NEVER commit this file!</span>
+DB_PASSWORD=super_secret_123
+JWT_SECRET=my_jwt_secret_key
+
+<span class="cm"># .gitignore — must include these</span>
+.env
+*.key
+*.pem</pre>
+    </div>
+  </div>
+
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num">9.4</div>
+      <div class="topic-meta"><h3>Network Security</h3><div class="sub">mTLS, Zero Trust, Kubernetes Network Policies</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="tbl"><table>
+        <thead><tr><th>Concept</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><strong>TLS/HTTPS</strong></td><td>Encrypts traffic between client and server (one-way verification)</td></tr>
+          <tr><td><strong>mTLS</strong> (Mutual TLS)</td><td>Both sides verify each other with certificates — stronger security for service-to-service</td></tr>
+          <tr><td><strong>Zero Trust</strong></td><td>"Never trust, always verify" — even internal traffic must authenticate</td></tr>
+          <tr><td><strong>Network Policy</strong> (K8s)</td><td>Acts like a firewall inside K8s — only allow specific services to communicate</td></tr>
+        </tbody>
+      </table></div>
+      <pre><span class="cm"># K8s NetworkPolicy — order-service can only receive traffic from api-gateway</span>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: order-service-ingress-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: order-service
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway       <span class="cm"># only api-gateway can call order-service</span>
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: payment-service   <span class="cm"># order-service can only call payment-service</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── PROJECT ─────────── -->
+<!-- ──────────── CASE STUDY ──────────── -->
+<div class="part-panel" id="cs">
+  <div class="part-header">
+    <div class="part-badge" style="background:rgba(82,219,176,.08);border-color:rgba(82,219,176,.25);color:var(--accent)">Case Study</div>
+    <h1>✈ Airline Booking System</h1>
+    <p>Production-grade system: real seat inventory, distributed transactions, high-concurrency, high-speed search, dynamic pricing.</p>
+  </div>
+
+  <!-- CS-1 -->
+  <div class="topic open">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">1</div>
+      <div class="topic-meta"><h3>Service Map &amp; Responsibilities</h3><div class="sub">8 services, each owning its own database</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre class="diagram">
+┌──────────────────────────────────────┐
+│          API Gateway (Nginx)         │
+│  /search  /book  /pay  /check-in     │
+└─────────────────┬────────────────────┘
+                  │
+  ┌───────────────┼───────────────┐
+  ▼               ▼               ▼
+┌──────────┐ ┌──────────┐ ┌──────────────┐
+│  Search  │ │  Flight  │ │  Inventory   │
+│ Service  │ │ Service  │ │  ★ CRITICAL  │
+│Elasticsearch│Postgres │ │Redis+Postgres│
+└──────────┘ └──────────┘ └──────────────┘
+  ▼               ▼               ▼
+┌──────────┐ ┌──────────┐ ┌──────────────┐
+│ Booking  │ │ Payment  │ │ Notification │
+│ Service  │ │ Service  │ │   Service    │
+│ Postgres │ │ Postgres │ │ (email/SMS)  │
+└──────────┘ └──────────┘ └──────────────┘
+                  │
+         ┌────────────────┐
+         │   Event Bus    │
+         │    (Kafka)     │
+         └────────────────┘</pre>
+      <div class="service-grid">
+        <div class="svc-card"><h4>Flight Service</h4><p>CRUD flights, schedules, aircraft. Source of truth for flight data.</p><div class="tag-list"><span class="tag">PostgreSQL</span></div></div>
+        <div class="svc-card"><h4>Inventory Service ★</h4><p>Manages available seats. Seat locking with TTL. Absolute overbooking prevention.</p><div class="tag-list"><span class="tag">Redis</span><span class="tag">PostgreSQL</span></div></div>
+        <div class="svc-card"><h4>Search Service</h4><p>Full-text flight search, filter by price/time/airline, fast aggregations.</p><div class="tag-list"><span class="tag">Elasticsearch</span></div></div>
+        <div class="svc-card"><h4>Pricing Service</h4><p>Dynamic pricing by demand. Publishes PriceUpdated events.</p><div class="tag-list"><span class="tag">PostgreSQL</span><span class="tag">Redis cache</span></div></div>
+        <div class="svc-card"><h4>Booking Service</h4><p>Orchestrates the Saga: lock seat → charge payment → confirm booking.</p><div class="tag-list"><span class="tag">PostgreSQL</span></div></div>
+        <div class="svc-card"><h4>Payment Service</h4><p>Charge/refund, idempotent, integrates with payment gateways.</p><div class="tag-list"><span class="tag">PostgreSQL</span></div></div>
+        <div class="svc-card"><h4>Check-in Service</h4><p>Online check-in, boarding pass generation, seat swap.</p><div class="tag-list"><span class="tag">PostgreSQL</span></div></div>
+        <div class="svc-card"><h4>Notification Service</h4><p>Email/SMS: booking confirmation, delay alerts, boarding reminders.</p><div class="tag-list"><span class="tag">Queue consumer</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CS-2 -->
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">2</div>
+      <div class="topic-meta"><h3>Database Schemas — Per Service</h3><div class="sub">Each service owns its data — no shared schemas</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre><span class="cm">-- ════ FLIGHT SERVICE DB ════</span>
+<span class="kw">CREATE TABLE</span> flights (
+  id            UUID         <span class="kw">PRIMARY KEY DEFAULT gen_random_uuid</span>(),
+  flight_no     VARCHAR(<span class="num">10</span>)  <span class="kw">NOT NULL UNIQUE</span>,
+  origin        CHAR(<span class="num">3</span>)      <span class="kw">NOT NULL</span>,   <span class="cm">-- IATA code e.g. LAX</span>
+  destination   CHAR(<span class="num">3</span>)      <span class="kw">NOT NULL</span>,
+  departs_at    TIMESTAMPTZ  <span class="kw">NOT NULL</span>,
+  arrives_at    TIMESTAMPTZ  <span class="kw">NOT NULL</span>,
+  aircraft_type VARCHAR(<span class="num">20</span>),             <span class="cm">-- A321, B737</span>
+  total_seats   INTEGER      <span class="kw">NOT NULL</span>
+);
+
+<span class="cm">-- ════ INVENTORY SERVICE DB ════</span>
+<span class="kw">CREATE TABLE</span> seats (
+  id           UUID        <span class="kw">PRIMARY KEY DEFAULT gen_random_uuid</span>(),
+  flight_id    UUID        <span class="kw">NOT NULL</span>,
+  seat_no      VARCHAR(<span class="num">4</span>)  <span class="kw">NOT NULL</span>,    <span class="cm">-- 12A, 12B...</span>
+  cabin        VARCHAR(<span class="num">10</span>) <span class="kw">NOT NULL</span>,    <span class="cm">-- ECONOMY, BUSINESS</span>
+  <span class="cm">-- AVAILABLE → LOCKED → BOOKED → CHECKED_IN</span>
+  status       VARCHAR(<span class="num">20</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'AVAILABLE'</span>,
+  locked_by    UUID,                      <span class="cm">-- bookingId holding the lock</span>
+  locked_until TIMESTAMPTZ,              <span class="cm">-- auto-release after expiry</span>
+  version      INTEGER     <span class="kw">NOT NULL DEFAULT</span> <span class="num">0</span>,   <span class="cm">-- optimistic lock</span>
+  <span class="kw">UNIQUE</span>(flight_id, seat_no)
+);
+
+<span class="cm">-- ════ BOOKING SERVICE DB ════</span>
+<span class="kw">CREATE TABLE</span> bookings (
+  id             UUID        <span class="kw">PRIMARY KEY DEFAULT gen_random_uuid</span>(),
+  user_id        UUID        <span class="kw">NOT NULL</span>,
+  flight_id      UUID        <span class="kw">NOT NULL</span>,
+  seat_no        VARCHAR(<span class="num">4</span>)  <span class="kw">NOT NULL</span>,
+  passenger_name VARCHAR(<span class="num">200</span>) <span class="kw">NOT NULL</span>,
+  total_amount   DECIMAL(<span class="num">12</span>,<span class="num">2</span>) <span class="kw">NOT NULL</span>,
+  <span class="cm">-- PENDING → SEAT_LOCKED → PAYMENT_PENDING → CONFIRMED → CANCELLED</span>
+  status         VARCHAR(<span class="num">30</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'PENDING'</span>,
+  saga_state     JSONB,       <span class="cm">-- saga checkpoint for resume/compensate</span>
+  created_at     TIMESTAMPTZ <span class="kw">DEFAULT NOW</span>(),
+  expires_at     TIMESTAMPTZ
+);
+
+<span class="cm">-- ════ PAYMENT SERVICE DB ════</span>
+<span class="kw">CREATE TABLE</span> payments (
+  id              UUID        <span class="kw">PRIMARY KEY DEFAULT gen_random_uuid</span>(),
+  booking_id      UUID        <span class="kw">NOT NULL UNIQUE</span>,
+  idempotency_key UUID        <span class="kw">NOT NULL UNIQUE</span>,  <span class="cm">-- retry-safe</span>
+  amount          DECIMAL(<span class="num">12</span>,<span class="num">2</span>) <span class="kw">NOT NULL</span>,
+  currency        CHAR(<span class="num">3</span>)     <span class="kw">DEFAULT</span> <span class="str">'USD'</span>,
+  gateway_tx_id   VARCHAR(<span class="num">100</span>),
+  status          VARCHAR(<span class="num">20</span>) <span class="kw">NOT NULL</span>,     <span class="cm">-- PENDING/CHARGED/REFUNDED/FAILED</span>
+  charged_at      TIMESTAMPTZ,
+  refunded_at     TIMESTAMPTZ
+);</pre>
+    </div>
+  </div>
+
+  <!-- CS-3 -->
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">3</div>
+      <div class="topic-meta"><h3>Booking Flow — Orchestration Saga</h3><div class="sub">Booking Service orchestrates: lock seat → charge → confirm</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre class="diagram">
+HAPPY PATH ✅
+
+User           API GW      Booking Svc    Inventory Svc   Payment Svc    Notification
+ │                │               │               │               │              │
+ │─POST /book────►│               │               │               │              │
+ │                │──────────────►│               │               │              │
+ │                │       INSERT booking           │               │              │
+ │                │       status=PENDING           │               │              │
+ │                │               │──lockSeat()──►│               │              │
+ │                │               │               │ Redis SETNX   │              │
+ │                │               │               │ TTL=600s      │              │
+ │                │               │◄──locked OK───│               │              │
+ │◄──202 {bookingId, expiresIn:600s}              │               │              │
+ │                │               │               │               │              │
+ │─POST /pay─────►│               │               │               │              │
+ │                │──────────────►│──────────────────────────────►│              │
+ │                │               │               │      charge card             │
+ │                │               │◄──────────────────────────────│              │
+ │                │               │──confirmSeat()►│               │              │
+ │                │               │               │ status=BOOKED │              │
+ │                │       status=CONFIRMED         │               │──────────────►
+ │◄──200 {ticket}─│               │               │               │  send email  │
+
+FAILURE PATH ❌ (payment fails)
+
+ │─POST /pay─────►│               │──────────────────────────────►│              │
+ │                │               │               │      charge FAILED            │
+ │                │               │◄──────────────────────────────│              │
+ │                │               │──releaseSeat()►│               │              │
+ │                │               │               │ DEL Redis key │              │
+ │                │       status=CANCELLED         │ status=AVAILABLE              │
+ │◄──402 {reason}─│               │               │               │              │</pre>
+
+      <pre><span class="cm">// booking-service/src/saga/bookingSaga.js</span>
+<span class="kw">class</span> <span class="cls">BookingSaga</span> {
+  <span class="kw">async</span> <span class="fn">execute</span>(bookingId, input) {
+    <span class="kw">const</span> booking = <span class="kw">await</span> Booking.<span class="fn">create</span>({
+      ...input, status: <span class="str">'PENDING'</span>,
+      sagaState: { step: <span class="str">'INIT'</span>, seatLocked: <span class="kw">false</span>, paymentCharged: <span class="kw">false</span> }
+    })
+    <span class="kw">try</span> {
+      <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">lockSeat</span>(booking)
+      <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">chargePayment</span>(booking)
+      <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">confirmSeat</span>(booking)
+      <span class="kw">await</span> booking.<span class="fn">update</span>({ status: <span class="str">'CONFIRMED'</span> })
+      <span class="kw">await</span> kafka.<span class="fn">publish</span>(<span class="str">'booking-events'</span>, { type: <span class="str">'BOOKING_CONFIRMED'</span>, data: booking })
+      <span class="kw">return</span> booking
+    } <span class="kw">catch</span> (err) {
+      <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">compensate</span>(booking, err)
+      <span class="kw">throw</span> err
+    }
+  }
+
+  <span class="kw">async</span> <span class="fn">lockSeat</span>(booking) {
+    <span class="kw">const</span> ok = <span class="kw">await</span> inventoryClient.<span class="fn">lockSeat</span>({
+      flightId: booking.flightId, seatNo: booking.seatNo,
+      bookingId: booking.id, ttlSeconds: <span class="num">600</span>
+    })
+    <span class="kw">if</span> (!ok) <span class="kw">throw new</span> <span class="cls">Error</span>(<span class="str">'SEAT_UNAVAILABLE'</span>)
+    <span class="kw">await</span> booking.<span class="fn">update</span>({ status: <span class="str">'SEAT_LOCKED'</span>, sagaState: { ...booking.sagaState, step: <span class="str">'SEAT_LOCKED'</span>, seatLocked: <span class="kw">true</span> } })
+  }
+
+  <span class="kw">async</span> <span class="fn">chargePayment</span>(booking) {
+    <span class="kw">const</span> result = <span class="kw">await</span> paymentClient.<span class="fn">charge</span>({
+      bookingId: booking.id, idempotencyKey: booking.id,
+      amount: booking.totalAmount, userId: booking.userId
+    })
+    <span class="kw">if</span> (!result.success) <span class="kw">throw new</span> <span class="cls">Error</span>(<span class="str">'PAYMENT_FAILED: '</span> + result.reason)
+    <span class="kw">await</span> booking.<span class="fn">update</span>({ status: <span class="str">'PAYMENT_PENDING'</span>, sagaState: { ...booking.sagaState, step: <span class="str">'PAYMENT_DONE'</span>, paymentCharged: <span class="kw">true</span>, txId: result.txId } })
+  }
+
+  <span class="kw">async</span> <span class="fn">compensate</span>(booking, err) {
+    console.<span class="fn">error</span>(<span class="str">`[Saga] Compensating booking ${booking.id}, failed at: ${err.message}`</span>)
+    <span class="kw">const</span> { sagaState } = booking
+    <span class="kw">if</span> (sagaState.paymentCharged) <span class="kw">await</span> paymentClient.<span class="fn">refund</span>({ bookingId: booking.id, txId: sagaState.txId })
+    <span class="kw">if</span> (sagaState.seatLocked)    <span class="kw">await</span> inventoryClient.<span class="fn">releaseSeat</span>({ flightId: booking.flightId, seatNo: booking.seatNo, bookingId: booking.id })
+    <span class="kw">await</span> booking.<span class="fn">update</span>({ status: <span class="str">'CANCELLED'</span>, cancelReason: err.message })
+  }
+}</pre>
+    </div>
+  </div>
+
+  <!-- CS-4 -->
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">4</div>
+      <div class="topic-meta"><h3>Inventory Service — Overbooking Prevention</h3><div class="sub">Redis atomic SETNX + Optimistic Locking: 200 users booking seat 12A simultaneously</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="analogy">
+        <div class="analogy-title">⚠️ The Problem</div>
+        <p>One seat left. 200 users press "Book" at the same time. Without proper handling, all 200 get "Booking successful" → overbooking. This is the hardest problem in any booking system.</p>
+      </div>
+      <pre class="diagram">
+STRATEGY: Redis as "gate filter" → PostgreSQL as source of truth
+
+Request 1 (user A)    ───► Redis SETNX seat:AA123:12A:lock  → OK  ✅ → proceed
+Request 2 (user B)    ───► Redis SETNX seat:AA123:12A:lock  → FAIL ❌ → "Seat is being held"
+Request 3 (user C)    ───► Redis SETNX seat:AA123:12A:lock  → FAIL ❌ → "Seat is being held"
+...
+Request 200 (user Z)  ───► Redis SETNX seat:AA123:12A:lock  → FAIL ❌
+
+After 10 min, user A doesn't pay:
+  → Redis TTL expires → key auto-deleted → seat available again
+  → Users B, C... can retry</pre>
+      <pre><span class="cm">// inventory-service/src/seatLocker.js</span>
+<span class="kw">class</span> <span class="cls">SeatLocker</span> {
+  <span class="kw">async</span> <span class="fn">lock</span>(flightId, seatNo, bookingId, ttlSeconds = <span class="num">600</span>) {
+    <span class="kw">const</span> key = `seat:${flightId}:${seatNo}:lock`
+    <span class="cm">// SET key value NX EX ttl — atomic: only sets if key doesn't exist</span>
+    <span class="kw">const</span> result = <span class="kw">await</span> redis.<span class="fn">set</span>(key, bookingId, <span class="str">'NX'</span>, <span class="str">'EX'</span>, ttlSeconds)
+    <span class="kw">return</span> result === <span class="str">'OK'</span>
+  }
+
+  <span class="kw">async</span> <span class="fn">release</span>(flightId, seatNo, bookingId) {
+    <span class="kw">const</span> key = `seat:${flightId}:${seatNo}:lock`
+    <span class="cm">// Lua script: check ownership & delete atomically</span>
+    <span class="kw">const</span> lua = `
+      if redis.call('GET', KEYS[1]) == ARGV[1] then
+        return redis.call('DEL', KEYS[1])
+      else return 0 end`
+    <span class="kw">return</span> (<span class="kw">await</span> redis.<span class="fn">eval</span>(lua, <span class="num">1</span>, key, bookingId)) === <span class="num">1</span>
+  }
+
+  <span class="kw">async</span> <span class="fn">confirm</span>(flightId, seatNo, bookingId) {
+    <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">release</span>(flightId, seatNo, bookingId)
+    <span class="cm">// Optimistic lock: only update if this booking still holds the seat</span>
+    <span class="kw">const</span> { rowCount } = <span class="kw">await</span> db.<span class="fn">query</span>(`
+      UPDATE seats SET status='BOOKED', locked_by=NULL, locked_until=NULL, version=version+1
+      WHERE flight_id=$1 AND seat_no=$2 AND locked_by=$3 AND status='LOCKED'
+    `, [flightId, seatNo, bookingId])
+    <span class="kw">if</span> (rowCount === <span class="num">0</span>) <span class="kw">throw new</span> <span class="cls">Error</span>(<span class="str">'CONFIRM_FAILED: seat state changed'</span>)
+  }
+}
+
+<span class="cm">// Background job: release expired seats every minute (safety net)</span>
+<span class="fn">setInterval</span>(<span class="kw">async</span> () => {
+  <span class="kw">await</span> db.<span class="fn">query</span>(`
+    UPDATE seats SET status='AVAILABLE', locked_by=NULL, locked_until=NULL
+    WHERE status='LOCKED' AND locked_until &lt; NOW()
+  `)
+}, <span class="num">60_000</span>)</pre>
+    </div>
+  </div>
+
+  <!-- CS-5 -->
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">5</div>
+      <div class="topic-meta"><h3>Search Service — High-Speed Flight Search</h3><div class="sub">Elasticsearch index + CQRS: aggregates data from Flight + Inventory + Pricing</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre class="diagram">
+PROBLEM: Search needs data from 3 different services
+  - Flight Service    → flight information
+  - Inventory Service → available seat count (changes every second)
+  - Pricing Service   → ticket price (dynamic, changes with demand)
+
+SOLUTION: Search Service maintains its own Elasticsearch index
+  → Listens to events from all 3 services, updates index accordingly
+  → Query: 1 Elasticsearch request → instant results
+
+EVENT FLOW:
+  FlightCreated    ──► index flight document
+  FlightUpdated    ──► update flight fields
+  InventoryChanged ──► update available_seats count
+  PriceUpdated     ──► update price fields
+  FlightCancelled  ──► mark flight cancelled</pre>
+      <pre><span class="cm">// search-service/src/search.js</span>
+kafka.<span class="fn">consume</span>(<span class="str">'inventory-events'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">if</span> (event.type === <span class="str">'SEAT_BOOKED'</span> || event.type === <span class="str">'SEAT_RELEASED'</span>) {
+    <span class="kw">await</span> esClient.<span class="fn">update</span>({ index: <span class="str">'flights'</span>, id: event.data.flightId,
+      body: { doc: { available_seats: event.data.newAvailableCount } }
+    })
+  }
+})
+
+app.<span class="fn">get</span>(<span class="str">'/search/flights'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { from, to, date, cabin = <span class="str">'ECONOMY'</span>, maxPrice, page = <span class="num">1</span>, size = <span class="num">20</span> } = req.query
+  <span class="kw">const</span> priceField = cabin === <span class="str">'BUSINESS'</span> ? <span class="str">'business_price'</span> : <span class="str">'economy_price'</span>
+
+  <span class="kw">const</span> result = <span class="kw">await</span> esClient.<span class="fn">search</span>({
+    index: <span class="str">'flights'</span>,
+    body: {
+      query: { bool: {
+        must: [
+          { term: { origin: from } }, { term: { destination: to } },
+          { range: { departs_at: { gte: `${date}T00:00:00`, lte: `${date}T23:59:59` } } },
+          { term: { status: <span class="str">'ACTIVE'</span> } },
+          { range: { available_seats: { gt: <span class="num">0</span> } } }
+        ],
+        filter: maxPrice ? [{ range: { [priceField]: { lte: maxPrice } } }] : []
+      }},
+      sort: [{ [priceField]: <span class="str">'asc'</span> }, { departs_at: <span class="str">'asc'</span> }],
+      from: (page - <span class="num">1</span>) * size, size
+    }
+  })
+  res.<span class="fn">json</span>({ data: result.hits.hits.<span class="fn">map</span>(h => h._source), total: result.hits.total.value })
+})</pre>
+    </div>
+  </div>
+
+  <!-- CS-6 -->
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">6</div>
+      <div class="topic-meta"><h3>Dynamic Pricing — Price Changes with Demand</h3><div class="sub">Fewer seats → higher price. Recalculated every time inventory changes</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <pre class="diagram">
+PRICING TRIGGER FLOW:
+
+  Inventory Svc                Pricing Svc             Search Svc
+      │                             │                       │
+      │── SEAT_BOOKED ─────────────►│                       │
+      │   {flightId, remaining: 5}  │ recalculate price     │
+      │                             │ remaining=5 → +100%   │
+      │                             │── PRICE_UPDATED ─────►│
+      │                             │                       │ update ES index
+
+PRICING RULES:
+  > 50% seats available  → base price
+  30–50% remaining       → base price × 1.10
+  10–30% remaining       → base price × 1.25
+  &lt; 10% remaining        → base price × 1.50
+  Last 5 seats           → base price × 2.00</pre>
+      <pre><span class="cm">// pricing-service/src/pricingEngine.js</span>
+kafka.<span class="fn">consume</span>(<span class="str">'inventory-events'</span>, <span class="kw">async</span> (event) => {
+  <span class="kw">if</span> (event.type !== <span class="str">'INVENTORY_CHANGED'</span>) <span class="kw">return</span>
+  <span class="kw">const</span> { flightId, totalSeats, availableSeats } = event.data
+  <span class="kw">const</span> ratio = availableSeats / totalSeats
+  <span class="kw">const</span> basePrice = <span class="kw">await</span> <span class="fn">getBasePrice</span>(flightId)
+  <span class="kw">const</span> multiplier = ratio > <span class="num">0.5</span>  ? <span class="num">1.00</span>
+                   : ratio > <span class="num">0.3</span>  ? <span class="num">1.10</span>
+                   : ratio > <span class="num">0.1</span>  ? <span class="num">1.25</span>
+                   : availableSeats > <span class="num">5</span> ? <span class="num">1.50</span> : <span class="num">2.00</span>
+  <span class="kw">const</span> newPrice = <span class="cls">Math</span>.<span class="fn">round</span>(basePrice * multiplier)
+  <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">'UPDATE flight_prices SET economy_price=$1 WHERE flight_id=$2'</span>, [newPrice, flightId])
+  <span class="kw">await</span> kafka.<span class="fn">publish</span>(<span class="str">'pricing-events'</span>, { type: <span class="str">'PRICE_UPDATED'</span>, data: { flightId, economyPrice: newPrice } })
+})</pre>
+    </div>
+  </div>
+
+  <!-- CS-7 -->
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">7</div>
+      <div class="topic-meta"><h3>Edge Cases &amp; Failure Scenarios</h3><div class="sub">What happens when things don't go as planned</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="tbl"><table>
+        <thead><tr><th>Scenario</th><th>Problem</th><th>Solution</th></tr></thead>
+        <tbody>
+          <tr><td><strong>User clicks Book twice</strong> (double submit)</td><td>Creates 2 bookings for the same seat</td><td>Frontend disables button after click + Backend idempotency (<code>UNIQUE(userId, flightId, seatNo)</code> on bookings)</td></tr>
+          <tr><td><strong>Redis is down</strong> when locking seat</td><td>SETNX fails → lock fails</td><td>Fallback to PostgreSQL <code>SELECT ... FOR UPDATE SKIP LOCKED</code></td></tr>
+          <tr><td><strong>Payment Service timeout</strong> (30s no response)</td><td>Don't know if charge succeeded</td><td>Booking Service re-queries Payment Service with <code>idempotencyKey</code> to check status before retrying</td></tr>
+          <tr><td><strong>Booking Service crashes</strong> mid-saga</td><td>Seat locked, payment not charged, saga incomplete</td><td>On restart: scan bookings with <code>status=SEAT_LOCKED</code> and <code>expires_at &lt; NOW()</code> → auto-compensate</td></tr>
+          <tr><td><strong>Flight cancelled</strong> after booking</td><td>Must refund all bookings</td><td>Flight Service publishes <code>FLIGHT_CANCELLED</code> → Booking Service queries all bookings → refunds each one → Notification sends emails</td></tr>
+          <tr><td><strong>Search index out of sync</strong></td><td>Search shows seats=5 but actually seats=0</td><td>Eventual consistency is acceptable for search. For accuracy: query Inventory Service directly when user selects a seat</td></tr>
+        </tbody>
+      </table></div>
+      <pre><span class="cm">// Recovery Job — self-heal stuck sagas every 2 minutes</span>
+<span class="kw">async function</span> <span class="fn">recoverStuckSagas</span>() {
+  <span class="kw">const</span> stuck = <span class="kw">await</span> db.<span class="fn">query</span>(`
+    SELECT * FROM bookings
+    WHERE status IN ('SEAT_LOCKED', 'PAYMENT_PENDING')
+      AND expires_at &lt; NOW()
+      AND created_at &lt; NOW() - INTERVAL '15 minutes'
+    LIMIT 50
+  `)
+  <span class="kw">for</span> (<span class="kw">const</span> booking <span class="kw">of</span> stuck.rows) {
+    <span class="kw">const</span> saga = <span class="kw">new</span> <span class="cls">BookingSaga</span>()
+    <span class="kw">await</span> saga.<span class="fn">compensate</span>(booking, <span class="kw">new</span> <span class="cls">Error</span>(<span class="str">'SAGA_TIMEOUT'</span>))
+  }
+}
+<span class="fn">setInterval</span>(recoverStuckSagas, <span class="num">2</span> * <span class="num">60</span> * <span class="num">1000</span>)</pre>
+    </div>
+  </div>
+
+  <!-- CS-8 -->
+  <div class="topic">
+    <div class="topic-header" onclick="toggle(this)">
+      <div class="topic-num" style="background:rgba(82,219,176,.15);color:var(--accent)">8</div>
+      <div class="topic-meta"><h3>Deployment &amp; Scaling Strategy</h3><div class="sub">Scale each service according to its actual bottleneck</div></div>
+      <div class="topic-chevron">▼</div>
+    </div>
+    <div class="topic-body">
+      <div class="tbl"><table>
+        <thead><tr><th>Service</th><th>Bottleneck</th><th>Scale Strategy</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Search Service</strong></td><td>CPU/RAM with many concurrent searches</td><td>HPA: scale on CPU &gt; 60%, min 3 replicas</td></tr>
+          <tr><td><strong>Inventory Service</strong></td><td>Redis throughput during flash sales</td><td>Redis Cluster, rate-limit lock requests per flight</td></tr>
+          <tr><td><strong>Booking Service</strong></td><td>DB connection pool with many parallel sagas</td><td>PgBouncer (connection pooling), read replicas</td></tr>
+          <tr><td><strong>Notification Service</strong></td><td>Email queue backlog</td><td>Scale consumers, queue priority (boarding pass &gt; promotion)</td></tr>
+          <tr><td><strong>Payment Service</strong></td><td>External gateway rate limits</td><td>Queue payment requests, exponential backoff retry</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="part-panel" id="proj">
+  <div class="part-header">
+    <div class="part-badge" style="background:rgba(249,167,75,.1);border-color:rgba(249,167,75,.3);color:var(--accent2)">Hands-on Project</div>
+    <h1>Mini E-Commerce Microservices</h1>
+    <p>A practical project to apply everything you've learned — Docker, RabbitMQ, JWT, API Gateway, and more.</p>
+  </div>
+
+  <div class="proj-section">
+    <h2>System Overview</h2>
+    <div class="service-grid">
+      <div class="svc-card"><h4>user-service :3001</h4><p>Register, login, issue JWT tokens</p><div class="tag-list"><span class="tag-pill">Node.js</span><span class="tag-pill">Express</span><span class="tag-pill">PostgreSQL</span><span class="tag-pill">JWT</span></div></div>
+      <div class="svc-card"><h4>order-service :3002</h4><p>Create orders, publish ORDER_CREATED event</p><div class="tag-list"><span class="tag-pill">Node.js</span><span class="tag-pill">PostgreSQL</span><span class="tag-pill">RabbitMQ</span></div></div>
+      <div class="svc-card"><h4>payment-service :3003</h4><p>Consumes ORDER_CREATED, processes payment, publishes PAYMENT_DONE</p><div class="tag-list"><span class="tag-pill">Node.js</span><span class="tag-pill">RabbitMQ</span></div></div>
+      <div class="svc-card"><h4>notification-service :3004</h4><p>Consumes PAYMENT_DONE, logs "Sending email to user"</p><div class="tag-list"><span class="tag-pill">Node.js</span><span class="tag-pill">RabbitMQ</span></div></div>
+      <div class="svc-card"><h4>api-gateway :80</h4><p>Nginx: routing, rate limiting, single entry point</p><div class="tag-list"><span class="tag-pill">Nginx</span></div></div>
+    </div>
+
+    <pre class="diagram">
+┌──────────────────────────────────────────────────────────┐
+│                   BUSINESS FLOW                          │
+│                                                          │
+│  Client                                                  │
+│    │                                                     │
+│    ▼                                                     │
+│  [Nginx API Gateway :80]                                 │
+│    │                                                     │
+│    ├── POST /api/auth/login  →  [User Service :3001]     │
+│    │                              ↳ Returns JWT token    │
+│    │                                                     │
+│    └── POST /api/orders      →  [Order Service :3002]    │
+│         (with JWT header)         ↳ Verify JWT           │
+│                                   ↳ Save order to DB     │
+│                                   ↳ Publish ORDER_CREATED│
+│                                            │             │
+│                                   [RabbitMQ]             │
+│                                    ├──→  [Payment :3003] │
+│                                    │      ↳ "Charge card"│
+│                                    │      ↳ Publish DONE │
+│                                    │              │      │
+│                                    └──→  [Notification]  │
+│                                           ↳ "Send email" │
+└──────────────────────────────────────────────────────────┘</pre>
+  </div>
+
+  <div class="proj-section">
+    <h2>Project Structure</h2>
+    <div class="file-tree">mini-ecommerce/
+├── docker-compose.yml           ← Runs the entire system
+├── nginx/
+│   └── nginx.conf               ← API Gateway config
+├── user-service/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── src/
+│       ├── index.js
+│       └── db.js
+├── order-service/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── src/
+│       ├── index.js
+│       └── publisher.js         ← Publishes events to RabbitMQ
+├── payment-service/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── src/
+│       ├── index.js
+│       └── consumer.js          ← Listens to RabbitMQ
+└── notification-service/
+    ├── Dockerfile
+    ├── package.json
+    └── src/
+        ├── index.js
+        └── consumer.js</div>
+  </div>
+
+  <div class="proj-section">
+    <h2>Full Source Code</h2>
+
+    <h3>1. docker-compose.yml</h3>
+    <pre>version: <span class="str">'3.8'</span>
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports: [<span class="str">"80:80"</span>]
+    volumes: [<span class="str">"./nginx/nginx.conf:/etc/nginx/nginx.conf"</span>]
+    depends_on: [user-service, order-service]
+
+  user-service:
+    build: ./user-service
+    environment:
+      DB_URL: postgres://postgres:secret@user-db:5432/users
+      JWT_SECRET: change_this_in_production
+    depends_on: [user-db]
+
+  user-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_PASSWORD: secret
+    volumes: [user-db-data:/var/lib/postgresql/data]
+
+  order-service:
+    build: ./order-service
+    environment:
+      DB_URL: postgres://postgres:secret@order-db:5432/orders
+      JWT_SECRET: change_this_in_production
+      RABBITMQ_URL: amqp://rabbitmq
+    depends_on: [order-db, rabbitmq]
+
+  order-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_PASSWORD: secret
+    volumes: [order-db-data:/var/lib/postgresql/data]
+
+  payment-service:
+    build: ./payment-service
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq
+    depends_on: [rabbitmq]
+
+  notification-service:
+    build: ./notification-service
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq
+    depends_on: [rabbitmq]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - <span class="str">"5672:5672"</span>    <span class="cm"># connection port</span>
+      - <span class="str">"15672:15672"</span>  <span class="cm"># web UI: http://localhost:15672 (guest/guest)</span>
+
+volumes:
+  user-db-data:
+  order-db-data:</pre>
+
+    <h3>2. nginx/nginx.conf</h3>
+    <pre>events {}
+http {
+  server {
+    listen 80;
+    location /api/auth   { proxy_pass http://user-service:3001; }
+    location /api/orders { proxy_pass http://order-service:3002; }
+  }
+}</pre>
+
+    <h3>3. user-service/src/index.js</h3>
+    <pre><span class="kw">const</span> express  = <span class="fn">require</span>(<span class="str">'express'</span>)
+<span class="kw">const</span> jwt      = <span class="fn">require</span>(<span class="str">'jsonwebtoken'</span>)
+<span class="kw">const</span> bcrypt   = <span class="fn">require</span>(<span class="str">'bcryptjs'</span>)
+<span class="kw">const</span> { Pool } = <span class="fn">require</span>(<span class="str">'pg'</span>)
+
+<span class="kw">const</span> app = <span class="fn">express</span>()
+app.<span class="fn">use</span>(express.<span class="fn">json</span>())
+<span class="kw">const</span> db = <span class="kw">new</span> <span class="cls">Pool</span>({ connectionString: process.env.DB_URL })
+
+db.<span class="fn">query</span>(<span class="str">`CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+)`</span>)
+
+app.<span class="fn">post</span>(<span class="str">'/register'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { email, password } = req.body
+  <span class="kw">const</span> hashed = <span class="kw">await</span> bcrypt.<span class="fn">hash</span>(password, <span class="num">10</span>)
+  <span class="kw">try</span> {
+    <span class="kw">const</span> { rows } = <span class="kw">await</span> db.<span class="fn">query</span>(
+      <span class="str">'INSERT INTO users(email,password) VALUES($1,$2) RETURNING id,email'</span>,
+      [email, hashed]
+    )
+    res.<span class="fn">status</span>(<span class="num">201</span>).<span class="fn">json</span>(rows[<span class="num">0</span>])
+  } <span class="kw">catch</span> { res.<span class="fn">status</span>(<span class="num">400</span>).<span class="fn">json</span>({ error: <span class="str">'Email already exists'</span> }) }
+})
+
+app.<span class="fn">post</span>(<span class="str">'/login'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { email, password } = req.body
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">'SELECT * FROM users WHERE email=$1'</span>, [email])
+  <span class="kw">const</span> user = rows[<span class="num">0</span>]
+  <span class="kw">if</span> (!user || !<span class="kw">await</span> bcrypt.<span class="fn">compare</span>(password, user.password))
+    <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">401</span>).<span class="fn">json</span>({ error: <span class="str">'Invalid credentials'</span> })
+  <span class="kw">const</span> token = jwt.<span class="fn">sign</span>({ userId: user.id, email }, process.env.JWT_SECRET, { expiresIn: <span class="str">'1h'</span> })
+  res.<span class="fn">json</span>({ token })
+})
+
+app.<span class="fn">listen</span>(<span class="num">3001</span>, () => console.<span class="fn">log</span>(<span class="str">'User Service :3001'</span>))</pre>
+
+    <h3>4. order-service/src/index.js</h3>
+    <pre><span class="kw">const</span> express  = <span class="fn">require</span>(<span class="str">'express'</span>)
+<span class="kw">const</span> jwt      = <span class="fn">require</span>(<span class="str">'jsonwebtoken'</span>)
+<span class="kw">const</span> amqp     = <span class="fn">require</span>(<span class="str">'amqplib'</span>)
+<span class="kw">const</span> { Pool } = <span class="fn">require</span>(<span class="str">'pg'</span>)
+
+<span class="kw">const</span> app = <span class="fn">express</span>()
+app.<span class="fn">use</span>(express.<span class="fn">json</span>())
+<span class="kw">const</span> db = <span class="kw">new</span> <span class="cls">Pool</span>({ connectionString: process.env.DB_URL })
+<span class="kw">let</span> channel
+
+<span class="kw">async function</span> <span class="fn">initRabbitMQ</span>() {
+  <span class="kw">const</span> conn = <span class="kw">await</span> amqp.<span class="fn">connect</span>(process.env.RABBITMQ_URL)
+  channel = <span class="kw">await</span> conn.<span class="fn">createChannel</span>()
+  <span class="kw">await</span> channel.<span class="fn">assertExchange</span>(<span class="str">'orders'</span>, <span class="str">'topic'</span>, { durable: <span class="kw">true</span> })
+}
+
+<span class="kw">function</span> <span class="fn">authenticate</span>(req, res, next) {
+  <span class="kw">const</span> token = req.headers.authorization?.split(<span class="str">' '</span>)[<span class="num">1</span>]
+  <span class="kw">if</span> (!token) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">401</span>).<span class="fn">json</span>({ error: <span class="str">'Unauthorized'</span> })
+  <span class="kw">try</span> { req.user = jwt.<span class="fn">verify</span>(token, process.env.JWT_SECRET); <span class="fn">next</span>() }
+  <span class="kw">catch</span> { res.<span class="fn">status</span>(<span class="num">401</span>).<span class="fn">json</span>({ error: <span class="str">'Invalid token'</span> }) }
+}
+
+db.<span class="fn">query</span>(<span class="str">`CREATE TABLE IF NOT EXISTS orders (
+  id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+  items JSONB NOT NULL, total NUMERIC NOT NULL,
+  status VARCHAR(50) DEFAULT 'PENDING', created_at TIMESTAMP DEFAULT NOW()
+)`</span>)
+
+app.<span class="fn">post</span>(<span class="str">'/'</span>, authenticate, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { items } = req.body
+  <span class="kw">if</span> (!items?.length) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">400</span>).<span class="fn">json</span>({ error: <span class="str">'Cart is empty'</span> })
+  <span class="kw">const</span> total = items.<span class="fn">reduce</span>((s, i) => s + i.price * i.qty, <span class="num">0</span>)
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> db.<span class="fn">query</span>(
+    <span class="str">'INSERT INTO orders(user_id,items,total) VALUES($1,$2,$3) RETURNING *'</span>,
+    [req.user.userId, <span class="cls">JSON</span>.<span class="fn">stringify</span>(items), total]
+  )
+  <span class="kw">const</span> order = rows[<span class="num">0</span>]
+  channel.<span class="fn">publish</span>(<span class="str">'orders'</span>, <span class="str">'order.created'</span>,
+    <span class="cls">Buffer</span>.<span class="fn">from</span>(<span class="cls">JSON</span>.<span class="fn">stringify</span>({ type: <span class="str">'ORDER_CREATED'</span>, orderId: order.id, userId: order.user_id, total: order.total }))
+  )
+  console.<span class="fn">log</span>(<span class="str">`✓ Order ${order.id} created and event published`</span>)
+  res.<span class="fn">status</span>(<span class="num">201</span>).<span class="fn">json</span>(order)
+})
+
+app.<span class="fn">get</span>(<span class="str">'/'</span>, authenticate, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { rows } = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">'SELECT * FROM orders WHERE user_id=$1 ORDER BY created_at DESC'</span>, [req.user.userId])
+  res.<span class="fn">json</span>(rows)
+})
+
+<span class="kw">async function</span> <span class="fn">start</span>() {
+  <span class="kw">await</span> <span class="fn">initRabbitMQ</span>()
+  app.<span class="fn">listen</span>(<span class="num">3002</span>, () => console.<span class="fn">log</span>(<span class="str">'Order Service :3002'</span>))
+}
+<span class="fn">start</span>()</pre>
+
+    <h3>5. payment-service/src/consumer.js</h3>
+    <pre><span class="kw">const</span> amqp    = <span class="fn">require</span>(<span class="str">'amqplib'</span>)
+<span class="kw">const</span> express = <span class="fn">require</span>(<span class="str">'express'</span>)
+<span class="kw">const</span> app     = <span class="fn">express</span>()
+
+<span class="kw">async function</span> <span class="fn">start</span>() {
+  <span class="kw">const</span> conn    = <span class="kw">await</span> amqp.<span class="fn">connect</span>(process.env.RABBITMQ_URL)
+  <span class="kw">const</span> channel = <span class="kw">await</span> conn.<span class="fn">createChannel</span>()
+
+  <span class="kw">await</span> channel.<span class="fn">assertExchange</span>(<span class="str">'orders'</span>, <span class="str">'topic'</span>, { durable: <span class="kw">true</span> })
+  <span class="kw">const</span> { queue } = <span class="kw">await</span> channel.<span class="fn">assertQueue</span>(<span class="str">'payment-queue'</span>, { durable: <span class="kw">true</span> })
+  <span class="kw">await</span> channel.<span class="fn">bindQueue</span>(queue, <span class="str">'orders'</span>, <span class="str">'order.created'</span>)
+
+  console.<span class="fn">log</span>(<span class="str">'Payment Service: listening for order.created events...'</span>)
+
+  channel.<span class="fn">consume</span>(queue, <span class="kw">async</span> (msg) => {
+    <span class="kw">const</span> event = <span class="cls">JSON</span>.<span class="fn">parse</span>(msg.content.<span class="fn">toString</span>())
+    console.<span class="fn">log</span>(<span class="str">`💳 Processing payment for Order #${event.orderId} — $${event.total}`</span>)
+
+    <span class="cm">// Simulate payment processing (would call Stripe/PayPal in production)</span>
+    <span class="kw">await</span> <span class="kw">new</span> <span class="cls">Promise</span>(r => <span class="fn">setTimeout</span>(r, <span class="num">1000</span>))
+
+    <span class="cm">// Publish PAYMENT_COMPLETED event</span>
+    channel.<span class="fn">publish</span>(<span class="str">'orders'</span>, <span class="str">'payment.completed'</span>,
+      <span class="cls">Buffer</span>.<span class="fn">from</span>(<span class="cls">JSON</span>.<span class="fn">stringify</span>({ type: <span class="str">'PAYMENT_COMPLETED'</span>, orderId: event.orderId, userId: event.userId }))
+    )
+    console.<span class="fn">log</span>(<span class="str">`✓ Payment successful for Order #${event.orderId}`</span>)
+    channel.<span class="fn">ack</span>(msg)
+  })
+}
+
+app.<span class="fn">get</span>(<span class="str">'/health'</span>, (_, res) => res.<span class="fn">json</span>({ status: <span class="str">'ok'</span> }))
+app.<span class="fn">listen</span>(<span class="num">3003</span>)
+<span class="fn">start</span>()</pre>
+
+    <h3>6. notification-service/src/consumer.js</h3>
+    <pre><span class="kw">const</span> amqp    = <span class="fn">require</span>(<span class="str">'amqplib'</span>)
+<span class="kw">const</span> express = <span class="fn">require</span>(<span class="str">'express'</span>)
+<span class="kw">const</span> app     = <span class="fn">express</span>()
+
+<span class="kw">async function</span> <span class="fn">start</span>() {
+  <span class="kw">const</span> conn    = <span class="kw">await</span> amqp.<span class="fn">connect</span>(process.env.RABBITMQ_URL)
+  <span class="kw">const</span> channel = <span class="kw">await</span> conn.<span class="fn">createChannel</span>()
+
+  <span class="kw">await</span> channel.<span class="fn">assertExchange</span>(<span class="str">'orders'</span>, <span class="str">'topic'</span>, { durable: <span class="kw">true</span> })
+  <span class="kw">const</span> { queue } = <span class="kw">await</span> channel.<span class="fn">assertQueue</span>(<span class="str">'notification-queue'</span>, { durable: <span class="kw">true</span> })
+  <span class="kw">await</span> channel.<span class="fn">bindQueue</span>(queue, <span class="str">'orders'</span>, <span class="str">'payment.completed'</span>)
+
+  console.<span class="fn">log</span>(<span class="str">'Notification Service: listening for payment.completed events...'</span>)
+
+  channel.<span class="fn">consume</span>(queue, <span class="kw">async</span> (msg) => {
+    <span class="kw">const</span> event = <span class="cls">JSON</span>.<span class="fn">parse</span>(msg.content.<span class="fn">toString</span>())
+    <span class="cm">// In production: send real email via SendGrid/SES</span>
+    console.<span class="fn">log</span>(<span class="str">`📧 Sending confirmation email to user ${event.userId} for Order #${event.orderId}`</span>)
+    channel.<span class="fn">ack</span>(msg)
+  })
+}
+
+app.<span class="fn">get</span>(<span class="str">'/health'</span>, (_, res) => res.<span class="fn">json</span>({ status: <span class="str">'ok'</span> }))
+app.<span class="fn">listen</span>(<span class="num">3004</span>)
+<span class="fn">start</span>()</pre>
+
+    <h3>7. Dockerfile (shared across all services)</h3>
+    <pre>FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY src ./src
+EXPOSE 3001
+CMD ["node", "src/index.js"]</pre>
+  </div>
+
+  <div class="proj-section">
+    <h2>How to Run</h2>
+    <div class="step-card"><div class="step-num">1</div><div><strong>Install tools</strong><pre style="margin-top:8px;">Docker Desktop  → https://docker.com/products/docker-desktop
+VS Code         → https://code.visualstudio.com
+Postman         → https://postman.com
+Node.js 18+     → https://nodejs.org</pre></div></div>
+    <div class="step-card"><div class="step-num">2</div><div><strong>Create the folder structure and copy the code above into each file</strong><pre style="margin-top:8px;">mkdir mini-ecommerce && cd mini-ecommerce
+mkdir nginx user-service order-service payment-service notification-service</pre></div></div>
+    <div class="step-card"><div class="step-num">3</div><div><strong>Install npm dependencies in each service folder</strong><pre style="margin-top:8px;">npm init -y
+npm install express pg jsonwebtoken bcryptjs amqplib</pre></div></div>
+    <div class="step-card"><div class="step-num">4</div><div><strong>Run the entire system</strong><pre style="margin-top:8px;">docker-compose up --build        # build and start everything
+docker-compose logs -f           # watch live logs
+docker-compose down              # stop everything</pre></div></div>
+    <div class="step-card"><div class="step-num">5</div><div><strong>Test with curl or Postman</strong><pre style="margin-top:8px;"><span class="cm"># 1. Register</span>
+curl -X POST http://localhost/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@test.com","password":"password123"}'
+
+<span class="cm"># 2. Login → get JWT token</span>
+curl -X POST http://localhost/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@test.com","password":"password123"}'
+<span class="cm"># Response: {"token":"eyJ..."}</span>
+
+<span class="cm"># 3. Place an order (use token from step 2)</span>
+curl -X POST http://localhost/api/orders \
+  -H "Authorization: Bearer eyJ..." \
+  -H "Content-Type: application/json" \
+  -d '{"items":[{"productId":"p1","name":"MacBook","price":1999,"qty":1}]}'
+
+<span class="cm"># 4. Watch the event-driven flow in logs</span>
+docker-compose logs -f payment-service notification-service</pre></div></div>
+    <div class="step-card"><div class="step-num">6</div><div><strong>Open RabbitMQ management UI</strong><p style="margin-top:6px;font-size:13px;color:#c8d0ec;">Navigate to <code>http://localhost:15672</code> — Login: <strong>guest / guest</strong><br/>Visualize queues, messages, bindings, and connections in real time.</p></div></div>
+  </div>
+
+  <div class="proj-section">
+    <h2>Extension Exercises</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Exercise</th><th>What you'll learn</th><th>Difficulty</th></tr></thead>
+      <tbody>
+        <tr><td>Add <strong>inventory-service</strong>: deduct stock on ORDER_CREATED</td><td>Multiple consumers on the same topic</td><td>⭐⭐</td></tr>
+        <tr><td>Implement <strong>Saga rollback</strong> when inventory is out of stock</td><td>Compensating transactions, error handling</td><td>⭐⭐⭐</td></tr>
+        <tr><td>Add <strong>Redis caching</strong> for GET /orders</td><td>Cache-aside pattern</td><td>⭐⭐</td></tr>
+        <tr><td>Add <strong>Prometheus + Grafana</strong> for metrics</td><td>The 4 Golden Signals, monitoring</td><td>⭐⭐</td></tr>
+        <tr><td>Write <strong>unit tests</strong> for OrderService with Jest</td><td>Unit testing, mocking</td><td>⭐⭐</td></tr>
+        <tr><td>Deploy to <strong>Kubernetes</strong> using minikube</td><td>K8s: Deployment, Service, Ingress, HPA</td><td>⭐⭐⭐⭐</td></tr>
+        <tr><td>Add <strong>Circuit Breaker</strong> to order-service for payment calls</td><td>Fault tolerance, resilience</td><td>⭐⭐⭐</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="proj-section">
+    <h2>Tech Stack Summary</h2>
+    <div class="service-grid">
+      <div class="svc-card"><h4>Runtime</h4><p>Node.js 18 + Express</p></div>
+      <div class="svc-card"><h4>Database</h4><p>PostgreSQL 15</p></div>
+      <div class="svc-card"><h4>Message Broker</h4><p>RabbitMQ 3</p></div>
+      <div class="svc-card"><h4>Cache</h4><p>Redis (extension exercise)</p></div>
+      <div class="svc-card"><h4>API Gateway</h4><p>Nginx</p></div>
+      <div class="svc-card"><h4>Containers</h4><p>Docker + Docker Compose</p></div>
+      <div class="svc-card"><h4>Auth</h4><p>JWT (jsonwebtoken)</p></div>
+      <div class="svc-card"><h4>Testing</h4><p>Jest + Supertest</p></div>
+      <div class="svc-card"><h4>Monitoring</h4><p>Prometheus + Grafana</p></div>
+      <div class="svc-card"><h4>IDE</h4><p>VS Code</p></div>
+      <div class="svc-card"><h4>API Testing</h4><p>Postman / Thunder Client</p></div>
+      <div class="svc-card"><h4>Orchestration</h4><p>Kubernetes (minikube)</p></div>
+    </div>
+    <div class="note" style="margin-top:20px;"><p>💡 Start with Docker Compose. Understand the event flow. Then move to Kubernetes. Don't try to learn everything at once.</p></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+const panels   = document.querySelectorAll('.part-panel')
+const navItems = document.querySelectorAll('.nav-part')
+let visited    = new Set(['p1'])
+
+function goTo(id) {
+  panels.forEach(p => p.classList.remove('active'))
+  navItems.forEach(n => n.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  const idx = [...panels].findIndex(p => p.id === id)
+  if (idx >= 0) navItems[idx].classList.add('active')
+  visited.add(id)
+  updateProgress()
+  window.scrollTo(0, 0)
+}
+
+function toggle(header) {
+  header.closest('.topic').classList.toggle('open')
+}
+
+function updateProgress() {
+  const parts = ['p1','p2','p3','p4','p5','p6','p7','p8','p9']
+  const done  = parts.filter(p => visited.has(p)).length
+  document.getElementById('prog-text').textContent  = `Progress: ${done} / 9 parts`
+  document.getElementById('prog-fill').style.width  = (done / 9 * 100) + '%'
+}
+
+updateProgress()
+</script>
+</body>
+</html>
