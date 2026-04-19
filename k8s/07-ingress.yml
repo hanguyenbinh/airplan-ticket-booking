@@ -1,0 +1,70 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: airline-ingress
+  namespace: airline
+  annotations:
+    # $2 captures everything after the service-name segment
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: airline.local
+    # Add to hosts file:  127.0.0.1 airline.local
+    http:
+      paths:
+      # Search: GET /api/search/flights?origin=SGN&destination=HAN
+      - path: /api/search(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: search-service
+            port:
+              number: 3003
+
+      # Inventory: GET /api/inventory/flights/:id/seats
+      - path: /api/inventory(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: inventory-service
+            port:
+              number: 3002
+
+      # Pricing: GET /api/pricing/prices/:flightId
+      - path: /api/pricing(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: pricing-service
+            port:
+              number: 3004
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: airline-ingress-booking
+  namespace: airline
+  annotations:
+    # Preserve /bookings prefix so NestJS route @Post('bookings') is matched
+    nginx.ingress.kubernetes.io/rewrite-target: $1
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: airline.local
+    http:
+      paths:
+      # Booking: POST /api/bookings, GET /api/bookings/:id
+      # /api/bookings     -> $1=/bookings     -> POST /bookings  ✓
+      # /api/bookings/123 -> $1=/bookings/123 -> GET  /bookings/123 ✓
+      - path: /api(/bookings.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: booking-service
+            port:
+              number: 3001

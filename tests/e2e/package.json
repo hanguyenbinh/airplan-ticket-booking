@@ -1,0 +1,13 @@
+{
+  "name": "airline-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "typescript": "^5.5.3"
+  }
+}

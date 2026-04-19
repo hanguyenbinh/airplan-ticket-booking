@@ -1,0 +1,12 @@
+# Shared config cho tất cả services
+# Kafka, Redis, Elasticsearch đều dùng DNS name nội bộ K8s
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shared-config
+  namespace: airline
+data:
+  KAFKA_BROKER:       "kafka.airline.svc.cluster.local:9092"
+  REDIS_URL:          "redis://redis-master.airline.svc.cluster.local:6379"
+  ELASTICSEARCH_URL:  "http://elasticsearch-master.airline.svc.cluster.local:9200"
+  NODE_ENV:           "production"

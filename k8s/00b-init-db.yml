@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-databases
+  namespace: airline
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-db
+          image: postgres:15-alpine
+          command:
+            - bash
+            - -c
+            - |
+              until pg_isready -h postgres-postgresql.airline -U postgres; do
+                echo "Waiting for PostgreSQL..."
+                sleep 3
+              done
+              echo "PostgreSQL is ready — creating databases..."
+              PGPASSWORD=postgres psql -h postgres-postgresql.airline -U postgres \
+                -c "CREATE DATABASE booking_db;"   2>/dev/null || echo "booking_db already exists"
+              PGPASSWORD=postgres psql -h postgres-postgresql.airline -U postgres \
+                -c "CREATE DATABASE inventory_db;" 2>/dev/null || echo "inventory_db already exists"
+              PGPASSWORD=postgres psql -h postgres-postgresql.airline -U postgres \
+                -c "CREATE DATABASE pricing_db;"   2>/dev/null || echo "pricing_db already exists"
+              echo "Done."

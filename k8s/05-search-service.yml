@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-service
+  namespace: airline
+spec:
+  replicas: 3           # search thường có traffic cao nhất
+  selector:
+    matchLabels:
+      app: search-service
+  template:
+    metadata:
+      labels:
+        app: search-service
+    spec:
+      containers:
+      - name: search-service
+        image: airline/search-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3003
+        env:
+        - name: PORT
+          value: "3003"
+        envFrom:
+        - configMapRef:
+            name: shared-config
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3003
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3003
+          initialDelaySeconds: 40
+          periodSeconds: 30
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-service
+  namespace: airline
+spec:
+  selector:
+    app: search-service
+  ports:
+  - port: 3003
+    targetPort: 3003
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: search-hpa
+  namespace: airline
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: search-service
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60

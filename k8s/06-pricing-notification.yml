@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pricing-service
+  namespace: airline
+spec:
+  replicas: 1           # stateless event consumer, 1 replica là đủ
+  selector:
+    matchLabels:
+      app: pricing-service
+  template:
+    metadata:
+      labels:
+        app: pricing-service
+    spec:
+      containers:
+      - name: pricing-service
+        image: airline/pricing-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3004
+        env:
+        - name: PORT
+          value: "3004"
+        - name: DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: PRICING_DB_URL
+        envFrom:
+        - configMapRef:
+            name: shared-config
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pricing-service
+  namespace: airline
+spec:
+  selector:
+    app: pricing-service
+  ports:
+    - port: 3004
+      targetPort: 3004
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: airline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+      - name: notification-service
+        image: airline/notification-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3005
+        env:
+        - name: PORT
+          value: "3005"
+        envFrom:
+        - configMapRef:
+            name: shared-config
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
