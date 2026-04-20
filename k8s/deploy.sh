@@ -1,8 +1,13 @@
 #!/bin/bash
 # deploy.sh — Script deploy toàn bộ airline booking lên K8s local
 # Usage: ./k8s/deploy.sh [minikube|docker-desktop]
+# Run from any cwd: paths resolve from this script’s directory.
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$ROOT_DIR"
 
 PLATFORM=${1:-docker-desktop}
 NAMESPACE=airline
@@ -45,10 +50,16 @@ helm repo add bitnami https://charts.bitnami.com/bitnami --force-update > /dev/n
 helm repo update > /dev/null
 
 # PostgreSQL
+# Primary: higher max_connections for many app pods × TypeORM pools; memory for shared_buffers
 helm upgrade --install postgres bitnami/postgresql \
   --namespace $NAMESPACE --create-namespace \
   --set auth.postgresPassword=postgres \
   --set primary.persistence.size=2Gi \
+  --set-string primary.extendedConfiguration="max_connections=400" \
+  --set primary.resources.requests.memory=512Mi \
+  --set primary.resources.requests.cpu=250m \
+  --set primary.resources.limits.memory=2Gi \
+  --set primary.resources.limits.cpu=2000m \
   --wait --timeout=5m
 
 # Redis
@@ -61,6 +72,12 @@ helm upgrade --install redis bitnami/redis \
 # Kafka (official apache/kafka image — KRaft, no Zookeeper)
 kubectl apply -f k8s/kafka.yml
 kubectl rollout status statefulset/kafka -n $NAMESPACE --timeout=5m
+
+echo ""
+echo "📨 Kafka topics — ensure 12 partitions (multi-replica consumers)..."
+kubectl delete job kafka-init-topics -n $NAMESPACE --ignore-not-found
+kubectl apply -f k8s/00c-kafka-topics.yml
+kubectl wait --for=condition=complete job/kafka-init-topics -n $NAMESPACE --timeout=5m
 
 # Elasticsearch (official elastic image — security disabled for local dev)
 kubectl apply -f k8s/elasticsearch.yml
@@ -88,12 +105,24 @@ kubectl apply -f k8s/05-search-service.yml
 kubectl apply -f k8s/06-pricing-notification.yml
 kubectl apply -f k8s/07-ingress.yml
 
+# Remove legacy HPAs (no longer in manifests — apply alone does not delete them)
+kubectl delete hpa booking-hpa inventory-hpa search-hpa -n $NAMESPACE --ignore-not-found
+
+# ─── 4b. Restart app pods (imagePullPolicy: Never + :latest — pick up rebuilt images)
+echo ""
+echo "🔄 Restarting app deployments to load new local images..."
+for d in booking-service inventory-service search-service pricing-service notification-service; do
+  kubectl rollout restart deployment/"$d" -n $NAMESPACE 2>/dev/null || true
+done
+
 # ─── 5. Chờ services ready ───────────────────────────────────────
 echo ""
 echo "⏳ Waiting for services to be ready..."
-kubectl rollout status deployment/booking-service   -n $NAMESPACE
-kubectl rollout status deployment/inventory-service -n $NAMESPACE
-kubectl rollout status deployment/search-service    -n $NAMESPACE
+kubectl rollout status deployment/booking-service      -n $NAMESPACE
+kubectl rollout status deployment/inventory-service  -n $NAMESPACE
+kubectl rollout status deployment/search-service     -n $NAMESPACE
+kubectl rollout status deployment/pricing-service    -n $NAMESPACE
+kubectl rollout status deployment/notification-service -n $NAMESPACE
 
 # ─── 6. In thông tin access ──────────────────────────────────────
 echo ""

@@ -8,6 +8,8 @@ import { InventoryController } from '../inventory.controller';
 import { SeatLockerService } from '../seat-locker.service';
 import { Seat } from '../entities/seat.entity';
 import { KafkaProducer } from '../../clients/kafka.client';
+import { SeatAvailabilityPublisherService } from '../seat-availability-publisher.service';
+import { SharedSeatAvailabilityRedisService } from '../shared-seat-availability-redis.service';
 
 describe('InventoryService (integration)', () => {
   let app: INestApplication;
@@ -34,6 +36,8 @@ describe('InventoryService (integration)', () => {
       controllers: [InventoryController],
       providers: [
         SeatLockerService,
+        SharedSeatAvailabilityRedisService,
+        SeatAvailabilityPublisherService,
         {
           provide: KafkaProducer,
           useValue: { emit: jest.fn(), onModuleInit: async () => {} },

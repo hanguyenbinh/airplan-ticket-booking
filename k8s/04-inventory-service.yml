@@ -4,7 +4,7 @@ metadata:
   name: inventory-service
   namespace: airline
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: inventory-service
@@ -66,23 +66,3 @@ spec:
   ports:
   - port: 3002
     targetPort: 3002
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: inventory-hpa
-  namespace: airline
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: inventory-service
-  minReplicas: 2
-  maxReplicas: 20      # inventory cần scale nhiều hơn vì lock requests cao
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 60

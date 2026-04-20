@@ -131,7 +131,7 @@ export class SeatLockerService implements OnModuleDestroy {
   }
 
   /** Cron job: auto-release ghế hết TTL nhưng chưa được release */
-  async releaseExpiredSeats(): Promise<void> {
+  async releaseExpiredSeats(): Promise<Array<{ flightId: string; seatNo: string }>> {
     const expired = await this.seatRepo
       .createQueryBuilder('seat')
       .where('seat.status = :status', { status: 'LOCKED' })
@@ -147,6 +147,35 @@ export class SeatLockerService implements OnModuleDestroy {
         lockExpiresAt: null,
       });
     }
+    return expired.map((s) => ({ flightId: s.flightId, seatNo: s.seatNo }));
+  }
+
+  /** Admin / seed: add an AVAILABLE row (idempotent if same seat exists). */
+  async addAvailableSeat(
+    flightId: string,
+    seatNo: string,
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
+    const existing = await this.seatRepo.findOneBy({ flightId, seatNo });
+    if (existing) {
+      if (existing.status === 'AVAILABLE') return { ok: true };
+      return { ok: false, reason: `Seat exists with status ${existing.status}` };
+    }
+    await this.seatRepo.save(this.seatRepo.create({ flightId, seatNo, status: 'AVAILABLE' }));
+    return { ok: true };
+  }
+
+  /** Remove seat row only when AVAILABLE (not LOCKED / BOOKED). */
+  async removeSeat(
+    flightId: string,
+    seatNo: string,
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
+    const existing = await this.seatRepo.findOneBy({ flightId, seatNo });
+    if (!existing) return { ok: false, reason: 'Seat not found' };
+    if (existing.status !== 'AVAILABLE') {
+      return { ok: false, reason: `Cannot remove seat in status ${existing.status}` };
+    }
+    await this.seatRepo.delete({ id: existing.id });
+    return { ok: true };
   }
 
   async getSeat(flightId: string, seatNo: string): Promise<Seat | null> {

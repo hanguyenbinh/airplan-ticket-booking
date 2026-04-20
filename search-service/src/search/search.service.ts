@@ -165,7 +165,7 @@ export class SearchService implements OnModuleInit {
   async seedSampleFlights() {
     const flights: FlightDoc[] = [
       {
-        flightId: 'f1a2b3c4-0001-0001-0001-000000000001',
+        flightId: '00000001-0000-4000-8000-000000000001',
         flightNo: 'VN123',
         airline: 'Vietnam Airlines',
         origin: 'SGN',
@@ -178,7 +178,7 @@ export class SearchService implements OnModuleInit {
         totalSeats: 150,
       },
       {
-        flightId: 'f1a2b3c4-0002-0002-0002-000000000002',
+        flightId: '00000002-0000-4000-8000-000000000002',
         flightNo: 'VJ456',
         airline: 'VietJet Air',
         origin: 'SGN',

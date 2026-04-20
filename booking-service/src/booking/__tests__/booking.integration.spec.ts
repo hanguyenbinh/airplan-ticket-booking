@@ -8,6 +8,7 @@ import { BookingService } from '../booking.service';
 import { BookingSaga } from '../saga/booking.saga';
 import { Booking } from '../entities/booking.entity';
 import { KafkaProducer } from '../../clients/kafka.client';
+import { AvailableSeatsCacheService } from '../available-seats-cache.service';
 
 describe('BookingService HTTP (integration)', () => {
   let app: INestApplication;
@@ -39,6 +40,7 @@ describe('BookingService HTTP (integration)', () => {
             onModuleInit: async () => {},
           },
         },
+        AvailableSeatsCacheService,
       ],
     }).compile();
 
@@ -72,6 +74,22 @@ describe('BookingService HTTP (integration)', () => {
 
     const get = await request(app.getHttpServer()).get(`/bookings/${res.body.id}`).expect(200);
     expect(get.body.status).toBe('INITIATED');
+  });
+
+  it('POST /bookings returns 409 when seat not in availability cache for known flight', async () => {
+    const cache = app.get(AvailableSeatsCacheService);
+    await cache.replaceAllFromInventoryInit([
+      { flightId: '00000000-0000-4000-8000-000000000001', seatNos: ['01A', '10A'] },
+    ]);
+    await request(app.getHttpServer())
+      .post('/bookings')
+      .send({
+        flightId: '00000000-0000-4000-8000-000000000001',
+        seatNo: '99Z',
+        passengerName: 'X',
+        totalAmount: 1,
+      })
+      .expect(409);
   });
 
   it('POST /bookings returns 400 for invalid flightId', async () => {

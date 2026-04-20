@@ -56,23 +56,3 @@ spec:
   ports:
   - port: 3003
     targetPort: 3003
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: search-hpa
-  namespace: airline
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: search-service
-  minReplicas: 3
-  maxReplicas: 15
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 60

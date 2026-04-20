@@ -42,7 +42,7 @@ spec:
             - --smp
             - "1"
             - --memory
-            - 512M
+            - 1G
             - --mode
             - dev-container
             - --kafka-addr

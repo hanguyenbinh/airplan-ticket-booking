@@ -11,12 +11,14 @@ import { EventPattern, Payload } from '@nestjs/microservices';
 import { BookingService } from './booking.service';
 import { BookingSaga } from './saga/booking.saga';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { AvailableSeatsCacheService } from './available-seats-cache.service';
 
 @Controller()
 export class BookingController {
   constructor(
     private readonly bookingService: BookingService,
     private readonly saga: BookingSaga,
+    private readonly seatsCache: AvailableSeatsCacheService,
   ) {}
 
   // ─── HTTP Endpoints ────────────────────────────────────────────────
@@ -57,5 +59,20 @@ export class BookingController {
   @EventPattern('seat.confirmed')
   async onSeatConfirmed(@Payload() data: { bookingId: string }) {
     await this.saga.onSeatConfirmed(data.bookingId);
+  }
+
+  @EventPattern('inventory.available.init')
+  async onInventoryAvailableInit(
+    @Payload() data: { snapshots?: { flightId: string; seatNos?: string[] }[] },
+  ) {
+    const snapshots = Array.isArray(data?.snapshots) ? data.snapshots : [];
+    await this.seatsCache.replaceAllFromInventoryInit(snapshots);
+  }
+
+  @EventPattern('inventory.changed')
+  async onInventoryChanged(@Payload() data: { flightId: string; seatNo: string; available: boolean }) {
+    if (data?.flightId && data?.seatNo != null) {
+      await this.seatsCache.applyAvailability(data.flightId, data.seatNo, Boolean(data.available));
+    }
   }
 }

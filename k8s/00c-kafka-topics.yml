@@ -1,0 +1,52 @@
+# Pre-create / widen saga topics for multiple consumer replicas.
+# `booking.failed` stays at 1 partition — low volume and Redpanda dev/single-broker
+# hits INVALID_PARTITIONS (hardware limits) if every topic is widened to 12.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-init-topics
+  namespace: airline
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: rpk
+          image: redpandadata/redpanda:v24.3.1
+          command: ["/bin/bash", "-ec"]
+          args:
+            - |
+              RPK_X="-X brokers=kafka.airline.svc.cluster.local:9092"
+              WANT=12
+              TOPICS="seat.lock seat.locked seat.lock.failed seat.release seat.confirm seat.confirmed seat.confirm.failed inventory.available.init inventory.changed pricing.updated booking.confirmed"
+              for t in $TOPICS; do
+                if rpk topic create "$t" -p "$WANT" -r 1 $RPK_X 2>/dev/null; then
+                  echo "created $t"
+                  continue
+                fi
+                pc=$(rpk topic describe "$t" -s $RPK_X 2>/dev/null | awk '/^[Pp]ARTITIONS/ {print $2; exit}')
+                if [[ -z "$pc" || ! "$pc" =~ ^[0-9]+$ ]]; then
+                  echo "skip $t (could not read partition count)"
+                  continue
+                fi
+                if [ "$pc" -lt "$WANT" ]; then
+                  need=$((WANT - pc))
+                  echo "add-partitions $t +$need (was $pc)"
+                  rpk topic add-partitions "$t" --num "$need" $RPK_X || true
+                else
+                  echo "ok $t (partitions=$pc)"
+                fi
+              done
+              # Rare events; single-partition is enough for notification-service (1 replica).
+              t=booking.failed
+              rpk topic create "$t" -p 1 -r 1 $RPK_X 2>/dev/null || echo "booking.failed already exists (leave partition count as-is)"
+              rpk topic list $RPK_X | head -50
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

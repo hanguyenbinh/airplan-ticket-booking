@@ -4,11 +4,13 @@ import { Repository } from 'typeorm';
 import { BookingSaga } from '../saga/booking.saga';
 import { Booking } from '../entities/booking.entity';
 import { KafkaProducer } from '../../clients/kafka.client';
+import { AvailableSeatsCacheService } from '../available-seats-cache.service';
 
 describe('BookingSaga', () => {
   let saga: BookingSaga;
   let repo: jest.Mocked<Pick<Repository<Booking>, 'findOneByOrFail' | 'update'>>;
   let kafka: { emit: jest.Mock };
+  let seatsCache: { unreserveSeatInCache: jest.Mock };
 
   beforeEach(async () => {
     jest.useFakeTimers();
@@ -17,12 +19,14 @@ describe('BookingSaga', () => {
       update: jest.fn().mockResolvedValue(undefined),
     };
     kafka = { emit: jest.fn() };
+    seatsCache = { unreserveSeatInCache: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BookingSaga,
         { provide: getRepositoryToken(Booking), useValue: repo },
         { provide: KafkaProducer, useValue: kafka },
+        { provide: AvailableSeatsCacheService, useValue: seatsCache },
       ],
     }).compile();
 
@@ -46,9 +50,15 @@ describe('BookingSaga', () => {
 
     await saga.start(booking);
 
-    expect(repo.update).toHaveBeenCalledWith(booking.id, {
-      sagaState: { step: 'LOCKING_SEAT' },
-    });
+    expect(repo.update).toHaveBeenCalledWith(
+      booking.id,
+      expect.objectContaining({
+        sagaState: expect.objectContaining({
+          step: 'LOCKING_SEAT',
+          lockRequestedAt: expect.any(String),
+        }),
+      }),
+    );
     expect(kafka.emit).toHaveBeenCalledWith('seat.lock', {
       bookingId: booking.id,
       flightId: booking.flightId,
@@ -61,25 +71,35 @@ describe('BookingSaga', () => {
     const bookingId = '00000000-0000-4000-8000-0000000000cc';
     const lockToken = '00000000-0000-4000-8000-0000000000dd';
     const flightId = '00000000-0000-4000-8000-0000000000ee';
+    const lockRequestedAt = '2020-01-01T00:00:00.000Z';
+    jest.setSystemTime(new Date('2020-01-01T00:00:02.500Z'));
     repo.findOneByOrFail
       .mockResolvedValueOnce({
         id: bookingId,
         flightId,
         seatNo: '03B',
-        sagaState: { step: 'STARTED' },
+        sagaState: { step: 'LOCKING_SEAT', lockRequestedAt },
       } as Booking)
       .mockResolvedValueOnce({
         id: bookingId,
         flightId,
         seatNo: '03B',
-        sagaState: { step: 'CHARGING_PAYMENT', lockToken },
+        sagaState: { step: 'CHARGING_PAYMENT', lockToken, lockRoundTripMs: 2500 },
       } as Booking);
 
     await saga.onSeatLocked(bookingId, lockToken);
 
-    expect(repo.update).toHaveBeenCalledWith(bookingId, {
-      sagaState: { step: 'CHARGING_PAYMENT', lockToken },
-    });
+    expect(repo.update).toHaveBeenCalledWith(
+      bookingId,
+      expect.objectContaining({
+        sagaState: expect.objectContaining({
+          step: 'CHARGING_PAYMENT',
+          lockToken,
+          lockRoundTripMs: 2500,
+          lockRequestedAt,
+        }),
+      }),
+    );
     expect(repo.update).toHaveBeenCalledWith(bookingId, { status: 'SEAT_LOCKED' });
 
     expect(kafka.emit).not.toHaveBeenCalledWith(
@@ -105,6 +125,7 @@ describe('BookingSaga', () => {
       flightId: '00000000-0000-4000-8000-000000000011',
       seatNo: '04C',
       totalAmount: 500000,
+      sagaState: { step: 'CONFIRMING_SEAT', lockRoundTripMs: 99 },
     } as Booking;
     repo.findOneByOrFail.mockResolvedValue(booking);
 
@@ -112,7 +133,7 @@ describe('BookingSaga', () => {
 
     expect(repo.update).toHaveBeenCalledWith(bookingId, {
       status: 'CONFIRMED',
-      sagaState: { step: 'DONE' },
+      sagaState: { ...booking.sagaState, step: 'DONE' },
     });
     expect(kafka.emit).toHaveBeenCalledWith('booking.confirmed', {
       bookingId,
@@ -125,11 +146,13 @@ describe('BookingSaga', () => {
 
   it('compensate emits seat.release when lockToken exists and marks FAILED', async () => {
     const bookingId = '00000000-0000-4000-8000-000000000022';
+    const lockRequestedAt = '2020-06-01T00:00:00.000Z';
+    jest.setSystemTime(new Date('2020-06-01T00:00:01.000Z'));
     const booking = {
       id: bookingId,
       flightId: '00000000-0000-4000-8000-000000000033',
       seatNo: '05D',
-      sagaState: { step: 'CHARGING_PAYMENT', lockToken: 'tok-uuid' },
+      sagaState: { step: 'CHARGING_PAYMENT', lockToken: 'tok-uuid', lockRequestedAt },
     } as Booking;
     repo.findOneByOrFail.mockResolvedValue(booking);
 
@@ -143,7 +166,24 @@ describe('BookingSaga', () => {
     });
     expect(repo.update).toHaveBeenCalledWith(bookingId, {
       status: 'FAILED',
-      sagaState: { step: 'COMPENSATED', error: 'Seat lock failed: x' },
+      sagaState: { step: 'COMPENSATED', error: 'Seat lock failed: x', lockRoundTripMs: 1000 },
     });
+    expect(seatsCache.unreserveSeatInCache).toHaveBeenCalledWith(booking.flightId, booking.seatNo);
+  });
+
+  it('compensate without lockToken still unreserves cache', async () => {
+    const bookingId = '00000000-0000-4000-8000-000000000099';
+    const booking = {
+      id: bookingId,
+      flightId: '00000000-0000-4000-8000-000000000088',
+      seatNo: '06E',
+      sagaState: { step: 'LOCKING_SEAT', lockRequestedAt: '2020-01-01T00:00:00.000Z' },
+    } as Booking;
+    repo.findOneByOrFail.mockResolvedValue(booking);
+
+    await saga.compensate(bookingId, 'Seat lock failed: busy');
+
+    expect(kafka.emit).not.toHaveBeenCalledWith('seat.release', expect.anything());
+    expect(seatsCache.unreserveSeatInCache).toHaveBeenCalledWith(booking.flightId, booking.seatNo);
   });
 });

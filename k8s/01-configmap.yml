@@ -7,6 +7,13 @@ metadata:
   namespace: airline
 data:
   KAFKA_BROKER:       "kafka.airline.svc.cluster.local:9092"
+  # Consumer tuning (ms) — longer session helps when the process is busy (e.g. load tests); must satisfy broker rules (heartbeat < session/3).
+  KAFKA_SESSION_TIMEOUT_MS:   "90000"
+  KAFKA_HEARTBEAT_INTERVAL_MS:  "10000"
+  KAFKA_REBALANCE_TIMEOUT_MS:   "120000"
+  KAFKA_REQUEST_TIMEOUT_MS:     "120000"
   REDIS_URL:          "redis://redis-master.airline.svc.cluster.local:6379"
   ELASTICSEARCH_URL:  "http://elasticsearch-master.airline.svc.cluster.local:9200"
   NODE_ENV:           "production"
+  # TypeORM pool per pod (booking/inventory/pricing). Lower = fewer DB connections under load.
+  DB_POOL_SIZE:       "5"

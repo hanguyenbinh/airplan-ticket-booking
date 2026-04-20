@@ -38,6 +38,10 @@ export class Booking {
   @Column({ type: 'jsonb', nullable: true })
   sagaState: {
     step: string;
+    /** ISO time when `seat.lock` was emitted (step 1). */
+    lockRequestedAt?: string;
+    /** ms from `lockRequestedAt` until `seat.locked` / `seat.lock.failed` (or compensate). */
+    lockRoundTripMs?: number;
     lockToken?: string;
     paymentId?: string;
     error?: string;

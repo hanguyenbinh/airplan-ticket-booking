@@ -9,9 +9,13 @@ export function KafkaClientModule(): DynamicModule {
       name: KAFKA_CLIENT,
       transport: Transport.KAFKA,
       options: {
+        // We only use emit(); disable the hidden reply consumer (default group nestjs-group-client)
+        // that otherwise heartbeats and can crash under heavy HTTP load on the same Node process.
+        producerOnlyMode: true,
         client: {
           clientId: 'booking-service',
           brokers: [(process.env.KAFKA_BROKER ?? 'localhost:9092')],
+          requestTimeout: Number(process.env.KAFKA_REQUEST_TIMEOUT_MS ?? 120000),
         },
         producer: { allowAutoTopicCreation: true },
       },

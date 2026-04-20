@@ -4,6 +4,7 @@ services:
   # ─── Infrastructure ───────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
+    command: ["postgres", "-c", "max_connections=400", "-c", "shared_buffers=256MB"]
     environment:
       POSTGRES_PASSWORD: postgres
     volumes:
@@ -47,11 +48,43 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Default for auto-created topics; without this, topics get 1 partition → only one consumer
+      # in a group (e.g. one of three inventory-service replicas) receives messages.
+      KAFKA_NUM_PARTITIONS: "12"
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
       timeout: 10s
       retries: 10
+
+  # Pre-create / widen saga topics so multiple replicas can share the consumer group (1 partition → 1 active consumer).
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["/bin/bash", "-ec"]
+    command:
+      - |
+        set -e
+        BOOT=kafka:9092
+        WANT=12
+        for t in seat.lock seat.locked seat.lock.failed seat.release seat.confirm seat.confirmed seat.confirm.failed inventory.available.init inventory.changed pricing.updated booking.confirmed; do
+          if kafka-topics --bootstrap-server "$$BOOT" --list 2>/dev/null | grep -qx "$$t"; then
+            PC=$$(kafka-topics --bootstrap-server "$$BOOT" --describe --topic "$$t" 2>/dev/null | head -1 | sed -n 's/.*PartitionCount: \([0-9][0-9]*\).*/\1/p')
+            if [ -z "$$PC" ]; then PC=1; fi
+            if [ "$$PC" -lt $$WANT ]; then
+              echo "kafka-init: alter $$t ($$PC -> $$WANT partitions)"
+              kafka-topics --bootstrap-server "$$BOOT" --alter --topic "$$t" --partitions $$WANT
+            else
+              echo "kafka-init: ok $$t (partitions=$$PC)"
+            fi
+          else
+            echo "kafka-init: create $$t"
+            kafka-topics --bootstrap-server "$$BOOT" --create --topic "$$t" --partitions $$WANT --replication-factor 1
+          fi
+        done
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
@@ -76,13 +109,23 @@ services:
       - "3001:3001"
     environment:
       PORT: 3001
+      DB_POOL_SIZE: "5"
       DB_URL: postgresql://postgres:postgres@postgres:5432/booking_db
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKER: kafka:9092
+      KAFKA_SESSION_TIMEOUT_MS: "90000"
+      KAFKA_HEARTBEAT_INTERVAL_MS: "10000"
+      KAFKA_REBALANCE_TIMEOUT_MS: "120000"
+      KAFKA_REQUEST_TIMEOUT_MS: "120000"
       JWT_SECRET: dev-secret-change-in-production
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
         condition: service_healthy
     restart: on-failure
 
@@ -92,14 +135,21 @@ services:
       - "3002:3002"
     environment:
       PORT: 3002
+      DB_POOL_SIZE: "5"
       DB_URL: postgresql://postgres:postgres@postgres:5432/inventory_db
       KAFKA_BROKER: kafka:9092
+      KAFKA_SESSION_TIMEOUT_MS: "90000"
+      KAFKA_HEARTBEAT_INTERVAL_MS: "10000"
+      KAFKA_REBALANCE_TIMEOUT_MS: "120000"
+      KAFKA_REQUEST_TIMEOUT_MS: "120000"
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: on-failure
@@ -111,10 +161,16 @@ services:
     environment:
       PORT: 3003
       KAFKA_BROKER: kafka:9092
+      KAFKA_SESSION_TIMEOUT_MS: "90000"
+      KAFKA_HEARTBEAT_INTERVAL_MS: "10000"
+      KAFKA_REBALANCE_TIMEOUT_MS: "120000"
+      KAFKA_REQUEST_TIMEOUT_MS: "120000"
       ELASTICSEARCH_URL: http://elasticsearch:9200
     depends_on:
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       elasticsearch:
         condition: service_healthy
     restart: on-failure
@@ -125,13 +181,20 @@ services:
       - "3004:3004"
     environment:
       PORT: 3004
+      DB_POOL_SIZE: "5"
       DB_URL: postgresql://postgres:postgres@postgres:5432/pricing_db
       KAFKA_BROKER: kafka:9092
+      KAFKA_SESSION_TIMEOUT_MS: "90000"
+      KAFKA_HEARTBEAT_INTERVAL_MS: "10000"
+      KAFKA_REBALANCE_TIMEOUT_MS: "120000"
+      KAFKA_REQUEST_TIMEOUT_MS: "120000"
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     restart: on-failure
 
   notification-service:
@@ -141,9 +204,15 @@ services:
     environment:
       PORT: 3005
       KAFKA_BROKER: kafka:9092
+      KAFKA_SESSION_TIMEOUT_MS: "90000"
+      KAFKA_HEARTBEAT_INTERVAL_MS: "10000"
+      KAFKA_REBALANCE_TIMEOUT_MS: "120000"
+      KAFKA_REQUEST_TIMEOUT_MS: "120000"
     depends_on:
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     restart: on-failure
 
 volumes:
