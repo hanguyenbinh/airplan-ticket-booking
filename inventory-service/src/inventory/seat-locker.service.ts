@@ -186,6 +186,64 @@ export class SeatLockerService implements OnModuleDestroy {
     return this.seatRepo.findBy({ flightId });
   }
 
+  /**
+   * Admin / test helper: set every seat row (optionally scoped to one flight) to AVAILABLE and wipe lock fields.
+   * Also clears Redis `seat:lock:*` keys so the next lock requests succeed immediately.
+   * Returns the fresh AVAILABLE snapshot grouped by flight.
+   */
+  async resetAllSeatsToAvailable(
+    flightId?: string,
+  ): Promise<{ updated: number; snapshots: { flightId: string; seatNos: string[] }[] }> {
+    const qb = this.seatRepo
+      .createQueryBuilder()
+      .update(Seat)
+      .set({
+        status: 'AVAILABLE',
+        lockToken: null,
+        lockedByBookingId: null,
+        lockExpiresAt: null,
+      });
+    if (flightId) qb.where('flightId = :flightId', { flightId });
+    const res = await qb.execute();
+    const updated = Number(res.affected ?? 0);
+
+    await this.deleteRedisLockKeys(flightId);
+
+    const rows = flightId
+      ? await this.seatRepo.findBy({ flightId, status: 'AVAILABLE' })
+      : await this.seatRepo.find({ where: { status: 'AVAILABLE' } });
+    const byFlight = new Map<string, string[]>();
+    for (const r of rows) {
+      const arr = byFlight.get(r.flightId) ?? [];
+      arr.push(r.seatNo);
+      byFlight.set(r.flightId, arr);
+    }
+    const snapshots = [...byFlight.entries()].map(([fid, seatNos]) => ({ flightId: fid, seatNos }));
+
+    this.logger.warn(
+      `Reset seats${flightId ? ` for flight=${flightId}` : ''}: updated=${updated}, flights=${snapshots.length}`,
+    );
+    return { updated, snapshots };
+  }
+
+  /** Uses SCAN instead of KEYS so a large Redis does not block. */
+  private async deleteRedisLockKeys(flightId?: string): Promise<void> {
+    const match = flightId ? `seat:lock:${flightId}:*` : 'seat:lock:*';
+    const stream = this.redis.scanStream({ match, count: 500 });
+    await new Promise<void>((resolve, reject) => {
+      stream.on('data', (keys: string[]) => {
+        if (keys.length === 0) return;
+        stream.pause();
+        this.redis
+          .del(...keys)
+          .then(() => stream.resume())
+          .catch(reject);
+      });
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.redis.quit();
   }

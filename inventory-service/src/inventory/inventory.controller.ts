@@ -144,4 +144,38 @@ export class InventoryController {
     this.emitInventoryChanged(flightId, seatNo, false);
     return { ok: true, flightId, seatNo };
   }
+
+  /**
+   * Admin: reset every seat row to AVAILABLE (all flights, or one flight via query).
+   * Clears Redis `seat:lock:*` keys, rewrites the shared seat availability snapshot in Redis,
+   * and emits `inventory.available.init` so all booking-service pods refresh their caches.
+   *
+   *   POST /flights/seats/reset               → all flights
+   *   POST /flights/:flightId/seats/reset     → one flight
+   */
+  @Post('flights/seats/reset')
+  async resetAllSeats() {
+    return this.resetSeatsInternal();
+  }
+
+  @Post('flights/:flightId/seats/reset')
+  async resetFlightSeats(@Param('flightId') flightId: string) {
+    return this.resetSeatsInternal(flightId);
+  }
+
+  private async resetSeatsInternal(flightId?: string) {
+    const { updated, snapshots } = await this.locker.resetAllSeatsToAvailable(flightId);
+    await this.seatAvailRedis.replaceAllFromSnapshots(snapshots);
+    this.kafka.emit('inventory.available.init', { snapshots });
+    this.logger.warn(
+      `Reset API${flightId ? ` flight=${flightId}` : ''}: updated=${updated}, flights=${snapshots.length}`,
+    );
+    return {
+      ok: true,
+      scope: flightId ? 'flight' : 'all',
+      flightId: flightId ?? null,
+      updated,
+      flights: snapshots.length,
+    };
+  }
 }

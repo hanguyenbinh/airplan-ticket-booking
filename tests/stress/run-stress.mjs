@@ -35,11 +35,14 @@ const LOG_FILE = path.resolve(process.env.STRESS_LOG_FILE ?? path.join(__dirname
 const INCLUDE_BOOKINGS = process.env.STRESS_INCLUDE_BOOKINGS === '1'
 
 /** Per-origin connection cap for the client; must be >= concurrency or Node/undici queues and may error under load. */
-const FETCH_CONNECTIONS = CONCURRENCY
+const FETCH_CONNECTIONS = Math.max(
+  CONCURRENCY,
+  Number(process.env.STRESS_FETCH_CONNECTIONS ?? CONCURRENCY),
+)
 
 const stressAgent = new Agent({
-  connections: 1000,
-  pipelining: 10,
+  connections: Math.min(16384, FETCH_CONNECTIONS),
+  pipelining: 1,
 })
 
 // RFC UUID v4 (matches infra/seeds + @IsUUID() on booking); old f1a2b3c4-* IDs fail validation.
@@ -158,9 +161,6 @@ async function runPool(total, concurrency) {
       if (r.ok) {
         successes++
         latencies.push(r.ms)
-        if (r.body) {
-          await r.body.text()
-        }
       } else {
         failures++
       }
