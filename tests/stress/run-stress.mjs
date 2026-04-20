@@ -17,6 +17,11 @@
  *   STRESS_FETCH_CONNECTIONS — max TCP connections per origin for the stress client (default = STRESS_CONCURRENCY).
  *     Node's built-in fetch() caps per-host connections (~256); high STRESS_CONCURRENCY without this causes
  *     "fetch failed" on the client. Run `npm install` in tests/stress/ so this script can use undici's Agent.
+ *   STRESS_FORCE_CLOSE  — if "1" (default), send "Connection: close" on every request and disable undici
+ *     keep-alive. This flips TCP so the SERVER calls close() first and lands in TIME_WAIT; the Windows
+ *     client socket then goes straight to CLOSED and frees the ephemeral port immediately, avoiding
+ *     EADDRINUSE on 127.0.0.1 under high concurrency. Set to "0" to reuse connections (faster RPS, but
+ *     expect port exhaustion on Windows > ~16k).
  *
  *   Booking POST 409 Conflict (seat cache / not available) is treated as success: not logged, not counted as fail.
  */
@@ -33,6 +38,7 @@ const TOTAL = Math.max(1, Number(process.env.STRESS_REQUESTS ?? 100000))
 const CONCURRENCY = Math.max(1, Number(process.env.STRESS_CONCURRENCY ?? 30))
 const LOG_FILE = path.resolve(process.env.STRESS_LOG_FILE ?? path.join(__dirname, 'stress-errors.log'))
 const INCLUDE_BOOKINGS = process.env.STRESS_INCLUDE_BOOKINGS === '1'
+const FORCE_CLOSE = (process.env.STRESS_FORCE_CLOSE ?? '1') === '1'
 
 /** Per-origin connection cap for the client; must be >= concurrency or Node/undici queues and may error under load. */
 const FETCH_CONNECTIONS = Math.max(
@@ -40,10 +46,26 @@ const FETCH_CONNECTIONS = Math.max(
   Number(process.env.STRESS_FETCH_CONNECTIONS ?? CONCURRENCY),
 )
 
-const stressAgent = new Agent({
-  connections: Math.min(16384, FETCH_CONNECTIONS),
-  pipelining: 1,
-})
+/**
+ * When FORCE_CLOSE is on:
+ *  - pipelining=0 disables HTTP/1.1 keep-alive pooling in undici.
+ *  - keepAliveTimeout=1ms so any residual socket is torn down immediately after the response.
+ *  - Combined with the "Connection: close" request header below, the server emits FIN first;
+ *    the client's ephemeral port does NOT enter TIME_WAIT and is reusable straight away.
+ */
+const stressAgent = new Agent(
+  FORCE_CLOSE
+    ? {
+        connections: Math.min(16384, FETCH_CONNECTIONS),
+        pipelining: 0,
+        keepAliveTimeout: 1,
+        keepAliveMaxTimeout: 1,
+      }
+    : {
+        connections: Math.min(16384, FETCH_CONNECTIONS),
+        pipelining: 1,
+      },
+)
 
 // RFC UUID v4 (matches infra/seeds + @IsUUID() on booking); old f1a2b3c4-* IDs fail validation.
 const FLIGHT_A = '00000001-0000-4000-8000-000000000001'
@@ -101,6 +123,10 @@ async function oneRequest(seq) {
     method: scenario.method,
     headers: { Accept: 'application/json' },
   }
+  if (FORCE_CLOSE) {
+    // Server closes socket after the response → server takes TIME_WAIT, not the Windows client.
+    init.headers.Connection = 'close'
+  }
   if (scenario.method === 'POST') {
     init.headers['Content-Type'] = 'application/json'
     init.body = scenario.body
@@ -108,6 +134,16 @@ async function oneRequest(seq) {
   let res
   try {
     res = await undiciFetch(url, { ...init, dispatcher: stressAgent })
+    // IMPORTANT: fully drain the response body BEFORE returning.
+    //   - With "Connection: close", undici closes the socket as soon as the body stream reaches EOF,
+    //     which releases the client's ephemeral port right after the response is fully received.
+    //   - Cancelling early (res.body.cancel()) would abort with RST and can leave the port in TIME_WAIT.
+    //   - Leaving the body unread keeps the stream (and the socket) alive until GC → port stays held.
+    // Drain to EOF for 2xx; the !res.ok branch below reads body itself.
+    if (res.ok) {
+      // discard content — we only care about hitting EOF so the socket closes cleanly.
+      await res.arrayBuffer()
+    }
   } catch (err) {
     const cause = err?.cause
     logError({
@@ -190,6 +226,8 @@ async function main() {
       FETCH_CONNECTIONS,
       'bookings=',
       INCLUDE_BOOKINGS,
+      'forceClose=',
+      FORCE_CLOSE,
     )
     console.log('[stress] error log=', LOG_FILE)
 

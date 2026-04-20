@@ -96,11 +96,9 @@ export class InventoryController {
     const ok = await this.locker.confirm(data.flightId, data.seatNo, data.lockToken);
 
     if (ok) {
-      this.kafka.emit('inventory.changed', {
-        flightId: data.flightId,
-        seatNo: data.seatNo,
-        available: false,
-      });
+      // No `inventory.changed` here: the seat was already removed from the booking-side
+      // availability cache when seat.lock succeeded (see onLock above). Re-emitting on
+      // confirm caused every booking pod to redo a Redis SREM that was already done.
       this.kafka.emit('seat.confirmed', { bookingId: data.bookingId });
     } else {
       this.kafka.emit('seat.confirm.failed', {

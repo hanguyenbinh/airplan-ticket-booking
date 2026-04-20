@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Seat } from './entities/seat.entity';
 import Redis from 'ioredis';
 import { randomUUID } from 'crypto';
@@ -26,15 +26,17 @@ export class SeatLockerService implements OnModuleDestroy {
 
   constructor(
     @InjectRepository(Seat) private readonly seatRepo: Repository<Seat>,
-    private readonly dataSource: DataSource,
   ) {
     this.redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
   }
 
   /**
-   * Lock ghế:
-   * 1. Redis SETNX atomic → đảm bảo chỉ 1 request thắng
-   * 2. Update DB status = LOCKED
+   * Lock ghế (1 Redis RTT + 1 Postgres RTT trên hot path):
+   *   1. Redis SETNX (atomic) — đảm bảo chỉ 1 request thắng cluster-wide.
+   *   2. Conditional UPDATE WHERE status='AVAILABLE' (atomic per-row).
+   *      - 1 row affected → success.
+   *      - 0 rows         → seat không tồn tại HOẶC không AVAILABLE → fallback path.
+   * Hot path: 2 RTT (cũ là 4: SETNX + SELECT + SELECT-by-pk + UPDATE).
    */
   async lock(
     bookingId: string,
@@ -45,38 +47,67 @@ export class SeatLockerService implements OnModuleDestroy {
     const redisKey = `seat:lock:${flightId}:${seatNo}`;
     const lockToken = randomUUID();
 
-    // Atomic SET if not exists
-    const result = await this.redis.set(redisKey, lockToken, 'EX', ttlSeconds, 'NX');
-
-    if (result !== 'OK') {
-      this.logger.warn(`Seat ${flightId}/${seatNo} already locked`);
+    const setNxResult = await this.redis.set(redisKey, lockToken, 'EX', ttlSeconds, 'NX');
+    if (setNxResult !== 'OK') {
+      this.logger.warn(`Seat ${flightId}/${seatNo} already locked (redis)`);
       return { success: false, reason: 'Seat already locked or booked' };
     }
 
+    const lockExpiresAt = new Date(Date.now() + ttlSeconds * 1000);
+
     try {
-      // Tìm hoặc tạo seat record
-      let seat = await this.seatRepo.findOneBy({ flightId, seatNo });
-      if (!seat) {
-        seat = this.seatRepo.create({ flightId, seatNo, status: 'AVAILABLE' });
+      const r = await this.seatRepo
+        .createQueryBuilder()
+        .update(Seat)
+        .set({
+          status: 'LOCKED',
+          lockToken,
+          lockedByBookingId: bookingId,
+          lockExpiresAt,
+        })
+        .where('flightId = :f AND seatNo = :s AND status = :a', {
+          f: flightId,
+          s: seatNo,
+          a: 'AVAILABLE',
+        })
+        .execute();
+
+      if (r.affected) {
+        this.logger.log(`Seat ${flightId}/${seatNo} locked for booking ${bookingId}`);
+        return { success: true, lockToken };
       }
 
-      if (seat.status === 'BOOKED') {
-        // Ghế đã bán vĩnh viễn → release Redis lock ngay
-        await this.redis.eval(RELEASE_SCRIPT, 1, redisKey, lockToken);
-        return { success: false, reason: 'Seat already booked' };
+      // Cold path: row missing (new seat) OR row exists but not AVAILABLE.
+      const existing = await this.seatRepo.findOneBy({ flightId, seatNo });
+      if (!existing) {
+        try {
+          await this.seatRepo.insert({
+            flightId,
+            seatNo,
+            status: 'LOCKED',
+            lockToken,
+            lockedByBookingId: bookingId,
+            lockExpiresAt,
+          });
+          this.logger.log(`Seat ${flightId}/${seatNo} created+locked for booking ${bookingId}`);
+          return { success: true, lockToken };
+        } catch (insertErr) {
+          await this.redis.eval(RELEASE_SCRIPT, 1, redisKey, lockToken).catch(() => undefined);
+          this.logger.warn(
+            `Seat ${flightId}/${seatNo} insert race for ${bookingId}: ${(insertErr as Error)?.message}`,
+          );
+          return { success: false, reason: 'Seat already locked or booked' };
+        }
       }
 
-      seat.status = 'LOCKED';
-      seat.lockToken = lockToken;
-      seat.lockedByBookingId = bookingId;
-      seat.lockExpiresAt = new Date(Date.now() + ttlSeconds * 1000);
-      await this.seatRepo.save(seat);
-
-      this.logger.log(`Seat ${flightId}/${seatNo} locked for booking ${bookingId}`);
-      return { success: true, lockToken };
+      await this.redis.eval(RELEASE_SCRIPT, 1, redisKey, lockToken).catch(() => undefined);
+      return {
+        success: false,
+        reason:
+          existing.status === 'BOOKED' ? 'Seat already booked' : 'Seat not available',
+      };
     } catch (err) {
-      // Rollback Redis lock nếu DB fail
-      await this.redis.eval(RELEASE_SCRIPT, 1, redisKey, lockToken);
+      await this.redis.eval(RELEASE_SCRIPT, 1, redisKey, lockToken).catch(() => undefined);
       throw err;
     }
   }
@@ -97,37 +128,36 @@ export class SeatLockerService implements OnModuleDestroy {
   }
 
   /**
-   * Confirm lock → BOOKED vĩnh viễn (dùng Optimistic Locking)
+   * Confirm lock → BOOKED vĩnh viễn.
+   * Single conditional UPDATE WHERE status='LOCKED' AND lockToken=...; atomic, 1 RTT.
+   * Drops the previous SELECT + transaction(BEGIN/save/COMMIT) (was 4 RTT).
    */
   async confirm(flightId: string, seatNo: string, lockToken: string): Promise<boolean> {
-    const seat = await this.seatRepo.findOneBy({ flightId, seatNo, lockToken });
-    if (!seat) {
-      this.logger.error(`Seat ${flightId}/${seatNo} not found or token mismatch`);
+    const r = await this.seatRepo
+      .createQueryBuilder()
+      .update(Seat)
+      .set({
+        status: 'BOOKED',
+        lockToken: null,
+        lockedByBookingId: null,
+        lockExpiresAt: null,
+      })
+      .where('flightId = :f AND seatNo = :s AND status = :st AND lockToken = :t', {
+        f: flightId,
+        s: seatNo,
+        st: 'LOCKED',
+        t: lockToken,
+      })
+      .execute();
+
+    if (!r.affected) {
+      this.logger.error(`Seat ${flightId}/${seatNo} confirm failed: not LOCKED with this token`);
       return false;
     }
 
-    try {
-      // TypeORM optimistic lock — throw OptimisticLockVersionMismatchError nếu version thay đổi
-      await this.dataSource.transaction(async (manager) => {
-        await manager.save(Seat, {
-          ...seat,
-          status: 'BOOKED',
-          lockToken: null,
-          lockedByBookingId: null,
-          lockExpiresAt: null,
-        });
-      });
-
-      // Xóa Redis lock
-      const redisKey = `seat:lock:${flightId}:${seatNo}`;
-      await this.redis.del(redisKey);
-
-      this.logger.log(`Seat ${flightId}/${seatNo} confirmed as BOOKED`);
-      return true;
-    } catch (err) {
-      this.logger.error(`Optimistic lock conflict for ${flightId}/${seatNo}: ${err}`);
-      return false;
-    }
+    await this.redis.del(`seat:lock:${flightId}:${seatNo}`).catch(() => undefined);
+    this.logger.log(`Seat ${flightId}/${seatNo} confirmed as BOOKED`);
+    return true;
   }
 
   /** Cron job: auto-release ghế hết TTL nhưng chưa được release */
