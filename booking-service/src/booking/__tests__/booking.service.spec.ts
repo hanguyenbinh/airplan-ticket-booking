@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BookingService } from '../booking.service';
 import { AvailableSeatsCacheService } from '../available-seats-cache.service';
-import { KafkaProducer } from '../../clients/kafka.client';
+import { KafkaProducer } from 'kafka-rdkafka';
 import { Booking } from '../entities/booking.entity';
 
 describe('BookingService', () => {

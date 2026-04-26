@@ -1,30 +1,23 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { FlightPrice } from './entities/flight-price.entity';
 import { PricingController } from './pricing.controller';
 import { PricingService } from './pricing.service';
+import { KAFKA_DISPATCHER, KAFKA_TOPICS, KafkaConsumerRunner, KafkaProducer } from 'kafka-rdkafka';
+import { PricingKafkaHandlerService } from './pricing.kafka-handler.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([FlightPrice]),
-    ClientsModule.register([
-      {
-        name: 'KAFKA_CLIENT',
-        transport: Transport.KAFKA,
-        options: {
-          producerOnlyMode: true,
-          client: {
-            clientId: 'pricing-service',
-            brokers: [(process.env.KAFKA_BROKER ?? 'localhost:9092')],
-            requestTimeout: Number(process.env.KAFKA_REQUEST_TIMEOUT_MS ?? 120000),
-          },
-          producer: { allowAutoTopicCreation: true },
-        },
-      },
-    ]),
   ],
   controllers: [PricingController],
-  providers: [PricingService],
+  providers: [
+    PricingService,
+    KafkaProducer,
+    PricingKafkaHandlerService,
+    { provide: KAFKA_TOPICS, useValue: ['inventory.changed'] },
+    { provide: KAFKA_DISPATCHER, useExisting: PricingKafkaHandlerService },
+    KafkaConsumerRunner,
+  ],
 })
 export class PricingModule {}

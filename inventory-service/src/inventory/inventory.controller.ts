@@ -10,10 +10,9 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SeatLockerService } from './seat-locker.service';
-import { KafkaProducer } from '../clients/kafka.client';
+import { KafkaProducer } from 'kafka-rdkafka';
 import { SharedSeatAvailabilityRedisService } from './shared-seat-availability-redis.service';
 
 @Controller()
@@ -46,66 +45,6 @@ export class InventoryController {
   @Get('flights/:flightId/seats/:seatNo')
   getSeat(@Param('flightId') flightId: string, @Param('seatNo') seatNo: string) {
     return this.locker.getSeat(flightId, seatNo);
-  }
-
-  // ─── Kafka Events ──────────────────────────────────────────────────
-
-  @EventPattern('seat.lock')
-  async onLock(
-    @Payload()
-    data: { bookingId: string; flightId: string; seatNo: string; ttlSeconds?: number },
-  ) {
-    this.logger.log(`seat.lock received: booking=${data.bookingId}`);
-    const result = await this.locker.lock(
-      data.bookingId,
-      data.flightId,
-      data.seatNo,
-      data.ttlSeconds,
-    );
-
-    if (result.success) {
-      this.kafka.emit('seat.locked', {
-        bookingId: data.bookingId,
-        lockToken: result.lockToken,
-      });
-      // Thông báo cho search-service cập nhật availability
-      this.emitInventoryChanged(data.flightId, data.seatNo, false);
-    } else {
-      this.kafka.emit('seat.lock.failed', {
-        bookingId: data.bookingId,
-        reason: result.reason,
-      });
-    }
-  }
-
-  @EventPattern('seat.release')
-  async onRelease(
-    @Payload() data: { bookingId: string; flightId: string; seatNo: string; lockToken: string },
-  ) {
-    this.logger.log(`seat.release received: booking=${data.bookingId}`);
-    await this.locker.release(data.flightId, data.seatNo, data.lockToken);
-
-    this.emitInventoryChanged(data.flightId, data.seatNo, true);
-  }
-
-  @EventPattern('seat.confirm')
-  async onConfirm(
-    @Payload() data: { bookingId: string; flightId: string; seatNo: string; lockToken: string },
-  ) {
-    this.logger.log(`seat.confirm received: booking=${data.bookingId}`);
-    const ok = await this.locker.confirm(data.flightId, data.seatNo, data.lockToken);
-
-    if (ok) {
-      // No `inventory.changed` here: the seat was already removed from the booking-side
-      // availability cache when seat.lock succeeded (see onLock above). Re-emitting on
-      // confirm caused every booking pod to redo a Redis SREM that was already done.
-      this.kafka.emit('seat.confirmed', { bookingId: data.bookingId });
-    } else {
-      this.kafka.emit('seat.confirm.failed', {
-        bookingId: data.bookingId,
-        reason: 'Optimistic lock conflict or token mismatch',
-      });
-    }
   }
 
   // ─── Cron Jobs ────────────────────────────────────────────────────

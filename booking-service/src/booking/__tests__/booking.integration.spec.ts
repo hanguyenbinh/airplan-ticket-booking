@@ -7,7 +7,7 @@ import { BookingController } from '../booking.controller';
 import { BookingService } from '../booking.service';
 import { BookingSaga } from '../saga/booking.saga';
 import { Booking } from '../entities/booking.entity';
-import { KafkaProducer } from '../../clients/kafka.client';
+import { KafkaProducer } from 'kafka-rdkafka';
 import { AvailableSeatsCacheService } from '../available-seats-cache.service';
 
 describe('BookingService HTTP (integration)', () => {

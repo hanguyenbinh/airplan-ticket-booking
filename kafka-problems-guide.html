@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka Issues - Thực tế & Giải pháp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 20px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            border-left: 5px solid #667eea;
+            padding-left: 20px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .problem-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #764ba2;
+        }
+
+        .problem-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+
+        .problem-detail {
+            margin-top: 15px;
+        }
+
+        .detail-section {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #667eea;
+            display: inline-block;
+            min-width: 150px;
+        }
+
+        .detail-content {
+            display: inline-block;
+            color: #555;
+        }
+
+        .when-happen {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .solution {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .code-block {
+            background: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .highlight {
+            background: #ffeaa7;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        footer {
+            background: #f1f3f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .table-of-contents {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .table-of-contents h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .toc-list {
+            list-style: none;
+        }
+
+        .toc-list li {
+            margin-bottom: 8px;
+        }
+
+        .toc-list a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .toc-list a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Kafka Issues Guide</h1>
+            <p>Hướng dẫn chi tiết về các vấn đề thường gặp và cách giải quyết</p>
+        </header>
+
+        <div class="content">
+            <div class="table-of-contents">
+                <h3>📑 Nội dung chính</h3>
+                <ul class="toc-list">
+                    <li><a href="#section1">1. Vấn đề về Rebalancing & Consumer</a></li>
+                    <li><a href="#section2">2. Vấn đề về Performance & Throughput</a></li>
+                    <li><a href="#section3">3. Vấn đề về Kiến trúc & Thiết kế Topic</a></li>
+                    <li><a href="#section4">4. Vấn đề về Operational & Infrastructure</a></li>
+                    <li><a href="#section5">5. Vấn đề về Data Integrity & Security</a></li>
+                    <li><a href="#section6">6. Vấn đề về Client & App Logic</a></li>
+                    <li><a href="#section7">7. Vấn đề về Môi trường Cloud/Kubernetes</a></li>
+                    <li><a href="#section8">8. Các vấn đề khác (Advanced)</a></li>
+                    <li><a href="#section9">9. Vấn đề về Cấu hình Log & Storage</a></li>
+                    <li><a href="#section10">10. Vấn đề về Kafka Connect & Ecosystem</a></li>
+                    <li><a href="#section11">11. Vấn đề về Network & Security</a></li>
+                    <li><a href="#section12">12. Vấn đề về Quản trị & Con người</a></li>
+                    <li><a href="#section13">13. Các lỗi "Góc khuất" (Edge Cases)</a></li>
+                </ul>
+            </div>
+
+            <!-- Section 1 -->
+            <div class="section" id="section1">
+                <h2>1️⃣ Vấn đề về Rebalancing & Consumer</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔄 Stop-the-World Rebalance</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Toàn bộ consumer dừng xử lý để chia lại partition</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Thêm hoặc bớt consumer trong một group</li>
+                                <li>Consumer crash và cố khôi phục</li>
+                                <li>Consumer timeout (session.timeout.ms) quá ngắn</li>
+                                <li>Sử dụng RoundRobinAssignor hoặc RangeAssignor (mặc định)</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Chuyển sang <span class="highlight">CooperativeStickyAssignor</span> - chỉ di chuyển các partition cần thiết</li>
+                                <li>Tăng <span class="highlight">session.timeout.ms</span> (mặc định 10s, tăng lên 30-45s)</li>
+                                <li>Tăng <span class="highlight">heartbeat.interval.ms</span> để consumer gửi heartbeat thường xuyên hơn</li>
+                                <li>Tối ưu hóa logic xử lý consumer để nó không vượt quá <span class="highlight">max.poll.interval.ms</span></li>
+                            </ul>
+                            <div class="code-block">
+# Java/Spring Boot
+spring.kafka.consumer.properties.partition.assignment.strategy=org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+
+# Python - confluent-kafka
+'partition.assignment.strategy': 'cooperative-sticky'
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔗 Rebalance Cascade</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Rebalance kéo dài làm timeout, gây ra đợt rebalance tiếp theo liên tục</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Nút Kafka bị chậm hoặc quá tải (CPU/IO)</li>
+                                <li>Mạng chập chờn giữa client và broker</li>
+                                <li>Consumer xử lý message quá lâu và không kịp gửi heartbeat</li>
+                                <li>Cấu hình timeout quá ngắn với logic xử lý nặng</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Kiểm tra metrics: CPU, Memory, Disk I/O của broker</li>
+                                <li>Nâng cấp hardware nếu cần (CPU, RAM)</li>
+                                <li>Tách các logic nặng ra thread riêng để consumer kịp gửi heartbeat</li>
+                                <li>Sử dụng KEDA (Kubernetes) để auto-scale dựa trên Consumer Lag thay vì chỉ CPU/RAM</li>
+                                <li>Tăng <span class="highlight">max.poll.interval.ms</span> (mặc định 5 phút, tăng lên 10-15 phút nếu logic xử lý nặng)</li>
+                            </ul>
+                            <div class="code-block">
+# Cấu hình Kafka Consumer tối ưu cho Rebalance
+session.timeout.ms=45000
+heartbeat.interval.ms=3000
+max.poll.interval.ms=600000  # 10 phút
+max.poll.records=100  # Giảm số record để xử lý nhanh hơn
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">📈 Consumer Lag</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Tốc độ xử lý của consumer chậm hơn tốc độ đẩy dữ liệu của producer</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Traffic từ producer vượt ngưỡng xử lý của consumer</li>
+                                <li>Logic xử lý consumer quá phức tạp (call API bên ngoài, DB query nặng)</li>
+                                <li>Số lượng consumer ít hơn số partition</li>
+                                <li>Consumer xảy ra rebalance liên tục</li>
+                                <li>Database hoặc service phía sau consumer bị quá tải</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Tăng số lượng consumer instances (= số partition)</li>
+                                <li>Sử dụng <span class="highlight">KEDA</span> để auto-scale khi consumer lag > ngưỡng</li>
+                                <li>Tối ưu hóa logic xử lý: batch processing, async calls, caching</li>
+                                <li>Tăng <span class="highlight">fetch.min.bytes</span> và <span class="highlight">fetch.max.wait.ms</span> để nhận được batch lớn hơn</li>
+                                <li>Thêm retry logic với exponential backoff cho các external calls</li>
+                                <li>Monitor consumer lag bằng Kafka Lag Exporter hoặc Prometheus</li>
+                            </ul>
+                            <div class="code-block">
+# KEDA ScaledObject cho Kafka
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kafka-consumer-scaler
+spec:
+  scaleTargetRef:
+    name: kafka-consumer-app
+  minReplicaCount: 1
+  maxReplicaCount: 20  # = số partition
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: kafka:9092
+      consumerGroup: my-group
+      topic: my-topic
+      lagThreshold: "10000"  # Scale up khi lag > 10k messages
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">☠️ Poison Pill Message</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Một tin nhắn bị lỗi khiến consumer crash mỗi khi thử đọc lại (vòng lặp vô tận)</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Message format không hợp lệ (JSON bị hỏng, encoding sai)</li>
+                                <li>Consumer code không xử lý exception, throw error liên tục</li>
+                                <li>Message có schema không tương thích với schema của consumer</li>
+                                <li>External service mà consumer phụ thuộc bị down, consumer retry vô tận</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Thêm Dead Letter Queue (DLQ) để gửi message lỗi vào topic riêng</li>
+                                <li>Xử lý exception một cách graceful, skip message lỗi và log</li>
+                                <li>Sử dụng schema registry để validate message trước xử lý</li>
+                                <li>Thêm metrics/alerting để phát hiện khi consumer crash liên tục</li>
+                                <li>Implement retry logic với circuit breaker cho external calls</li>
+                            </ul>
+                            <div class="code-block">
+try {
+    ConsumerRecord&lt;String, String&gt; record = ...
+    processMessage(record);
+} catch (Exception e) {
+    // Gửi vào DLQ thay vì crash
+    producer.send(new ProducerRecord&lt;&gt;("my-topic-dlq", record.value()));
+    logger.error("Failed to process message, sent to DLQ", e);
+    // KHÔNG throw exception - continue processing
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🐢 Slow Processing</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Logic xử lý trong consumer quá nặng làm trigger max.poll.interval.ms</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Consumer xử lý message lâu hơn max.poll.interval.ms (mặc định 5 phút)</li>
+                                <li>Có blocking I/O (DB query, HTTP call) trong message processing</li>
+                                <li>Không có proper resource limit (CPU throttle)</li>
+                                <li>Consumer xử lý một batch quá lớn cùng lúc</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Tách processing logic ra thread pool để consumer main thread kịp poll mới</li>
+                                <li>Tăng <span class="highlight">max.poll.interval.ms</span> (nhưng không quá 30 phút)</li>
+                                <li>Giảm <span class="highlight">max.poll.records</span> để xử lý ít message hơn trong mỗi batch</li>
+                                <li>Sử dụng async/await hoặc reactive stream (Project Reactor, RxJava)</li>
+                                <li>Thêm timeout cho external calls, không cho phép một call block vô tận</li>
+                            </ul>
+                            <div class="code-block">
+# Cấu hình
+max.poll.records=50  # Giảm từ default 500
+max.poll.interval.ms=300000  # 5 phút (đủ cho processing)
+
+# Code pattern: Thread pool + async processing
+ExecutorService executor = Executors.newFixedThreadPool(5);
+for (ConsumerRecord record : records) {
+    executor.submit(() -> processMessage(record));
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2 -->
+            <div class="section" id="section2">
+                <h2>2️⃣ Vấn đề về Performance & Throughput</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">⚡ High Producer Latency</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Độ trễ gửi tin nhắn cao do cấu hình acks=all</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Sử dụng <span class="highlight">acks=all</span> (cần tất cả in-sync replicas acknowledge)</li>
+                                <li>Có quá ít in-sync replicas hoặc leader bị chậm</li>
+                                <li>Network bị chập chờn giữa các brokers</li>
+                                <li>Replication factor quá cao (VD: 5 replicas)</li>
+                            </ul>
+                        </div>
+                        <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; border-radius: 4px; margin-top: 15px;">
+                            <strong style="color: #1976D2;">📚 Giải thích về ACK (Acknowledgment):</strong>
+                            <p style="margin-top: 10px; color: #333;">ACK xác định mức độ "an toàn" của dữ liệu trước khi producer xem message là đã gửi thành công:</p>
+                            <ul style="margin-top: 10px; margin-left: 20px; color: #333; line-height: 1.8;">
+                                <li><strong>acks=0</strong> - Producer không đợi phản hồi từ broker. Message được coi là gửi xong ngay lập tức.
+                                    <ul style="margin-top: 5px;">
+                                        <li>⚡ Latency: <span class="highlight">THẤP NHẤT</span></li>
+                                        <li>💾 Data Loss Risk: <span class="highlight">CAO NHẤT</span> (nếu broker crash, message bị mất)</li>
+                                        <li>📊 Use case: Log, metrics, non-critical data</li>
+                                    </ul>
+                                </li>
+                                <li><strong>acks=1</strong> - Producer đợi cho đến khi Leader broker acknowledge. Replicas được ghi vào sau đó.
+                                    <ul style="margin-top: 5px;">
+                                        <li>⚡ Latency: <span class="highlight">TRUNG BÌNH</span> (mất ~10-50ms)</li>
+                                        <li>💾 Data Loss Risk: <span class="highlight">TRUNG BÌNH</span> (nếu leader crash trước khi replicate, message có thể mất)</li>
+                                        <li>📊 Use case: Hầu hết applications (recommended cho 90% use cases)</li>
+                                    </ul>
+                                </li>
+                                <li><strong>acks=all (acks=-1)</strong> - Producer đợi cho đến khi tất cả in-sync replicas (ISR) acknowledge. Đây là mode an toàn nhất.
+                                    <ul style="margin-top: 5px;">
+                                        <li>⚡ Latency: <span class="highlight">CAO NHẤT</span> (phụ thuộc số replicas, có thể 50-200ms+)</li>
+                                        <li>💾 Data Loss Risk: <span class="highlight">THẤP NHẤT</span> (data được ghi trên ≥2 brokers trước khi return success)</li>
+                                        <li>📊 Use case: Financial transactions, critical data, compliance required</li>
+                                        <li>⚠️ Note: Cần đặt <span class="highlight">min.insync.replicas ≥ 2</span> để hiệu quả</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                            <p style="margin-top: 12px; color: #D32F2F;"><strong>💡 Tradeoff:</strong> Latency thấp ↔ Data durability cao (chọn một)</p>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li><strong>Bước 1:</strong> Đánh giá yêu cầu data durability của use case
+                                    <ul style="margin-top: 5px;">
+                                        <li>Có phải data quan trọng không? (transactions, payments, compliance)</li>
+                                        <li>Hay chỉ analytics/logs có thể mất một vài message?</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Nếu cần độ tin cậy cao (Financial, Payment):</strong>
+                                    <ul style="margin-top: 5px;">
+                                        <li>Sử dụng <span class="highlight">acks=all</span> với <span class="highlight">min.insync.replicas=2</span></li>
+                                        <li>Replication factor = 3 (1 leader + 2 replicas)</li>
+                                        <li>Accept latency cao hơn (là đánh đổi cần thiết)</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Nếu không cần độ tin cậy cao (Logs, Metrics, Analytics):</strong>
+                                    <ul style="margin-top: 5px;">
+                                        <li>Dùng <span class="highlight">acks=1</span> (recommended - balanced choice)</li>
+                                        <li>Hoặc <span class="highlight">acks=0</span> nếu throughput là priority tuyệt đối</li>
+                                        <li>Latency sẽ giảm 50-80% so với acks=all</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Tối ưu hóa thêm (nếu acks=all):</strong>
+                                    <ul style="margin-top: 5px;">
+                                        <li>Tăng <span class="highlight">batch.size</span> và <span class="highlight">linger.ms</span> để gom messages thành batch lớn</li>
+                                        <li>Sử dụng compression (snappy hoặc lz4) để giảm kích thước message</li>
+                                        <li>Đảm bảo brokers có CPU/IO đủ (scale up hoặc thêm broker)</li>
+                                    </ul>
+                                </li>
+                                <li>Monitor broker CPU/IO, nâng cấp hardware nếu cần</li>
+                            </ul>
+                            <div class="code-block">
+# Producer config tối ưu cho latency thấp
+acks=1  # Chỉ cần leader acknowledge
+batch.size=32768  # 32KB
+linger.ms=10  # Chờ 10ms để gom batch
+compression.type=snappy  # Nén dữ liệu
+buffer.memory=67108864  # 64MB buffer
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">📦 Batch Size Inefficiency</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Kích thước batch quá nhỏ gây tốn tài nguyên mạng, quá lớn gây tốn bộ nhớ</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Batch size = 0 (gửi từng message một) → bandwidth lãng phí</li>
+                                <li>Batch size quá lớn (VD: 1MB) → producer buffer vỡ, memory spike</li>
+                                <li>Network không ổn định → batch bị fragment</li>
+                                <li>Không điều chỉnh linger.ms phù hợp</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Đặt <span class="highlight">batch.size</span> = 16KB - 32KB (phù hợp với MTU mạng 1500 bytes)</li>
+                                <li>Đặt <span class="highlight">linger.ms</span> = 10ms - 100ms tùy yêu cầu latency</li>
+                                <li>Monitor memory usage của producer, điều chỉnh <span class="highlight">buffer.memory</span></li>
+                                <li>Kích thước message không nên vượt quá 80% của batch.size</li>
+                            </ul>
+                            <div class="code-block">
+# Balanced config cho throughput & latency
+batch.size=16384  # 16KB (default is 16KB)
+linger.ms=50  # Chờ max 50ms hoặc batch full
+buffer.memory=134217728  # 128MB
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔧 Compression Overhead</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">CPU của producer tăng cao khi bật nén (Gzip, Snappy, Zstd)</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Sử dụng compression.type=gzip → CPU overhead cao nhất</li>
+                                <li>Message rất lớn (> 1MB)</li>
+                                <li>Producer chạy trên container với CPU limit thấp</li>
+                                <li>Network không phải bottleneck (bandwidth đủ)</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Chọn compression phù hợp: <span class="highlight">snappy</span> (cân bằng), <span class="highlight">lz4</span> (nhanh), <span class="highlight">zstd</span> (nén tốt nhất)</li>
+                                <li>Nếu CPU là bottleneck → dùng <span class="highlight">lz4</span> hoặc không nén</li>
+                                <li>Nếu bandwidth là bottleneck → dùng <span class="highlight">zstd</span></li>
+                                <li>Tăng CPU resource cho producer container (nếu K8s)</li>
+                                <li>Chỉ nén message > 1KB (small messages không nén lợi)</li>
+                            </ul>
+                            <div class="code-block">
+# Recommendation
+compression.type=snappy  # Balanced choice
+# hoặc
+compression.type=lz4  # Nếu CPU limited
+
+# Performance: snappy > lz4 > gzip (CPU)
+# Compression: gzip > zstd > snappy > lz4 (Size)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3 -->
+            <div class="section" id="section3">
+                <h2>3️⃣ Vấn đề về Kiến trúc & Thiết kế Topic</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">⚖️ Skewed Partitions</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Một partition chứa quá nhiều dữ liệu so với các partition khác do chọn Key sai</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Sử dụng key không đủ diverse (VD: key là region, chỉ có 3 giá trị, 10 partitions)</li>
+                                <li>Dùng user_id làm key nhưng một user rất active</li>
+                                <li>Dùng null key → tất cả messages ngẫu nhiên vào partition (có thể bị skew)</li>
+                                <li>Business logic không cân bằng (VD: 90% users từ 1 region)</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Chọn key có entropy cao: user_id, order_id, device_id (không region, status)</li>
+                                <li>Sử dụng composite key: <span class="highlight">region-user_id</span> thay vì chỉ region</li>
+                                <li>Nếu cần ordering per key → dùng same key nhưng tăng partition count</li>
+                                <li>Monitor partition size qua JMX metrics</li>
+                                <li>Nếu đã xảy ra skew → tạo topic mới với partition strategy tốt hơn</li>
+                            </ul>
+                            <div class="code-block">
+# Bad key design
+String key = record.getRegion();  // Chỉ 3 giá trị → skew
+
+# Good key design
+String key = record.getUserId();  // Millions of unique values
+
+# Better - composite key
+String key = record.getRegion() + "-" + record.getUserId();
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🏗️ Inappropriate Retention</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Xóa dữ liệu quá sớm hoặc giữ quá lâu gây tràn đĩa</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Retention = 24h → consumer bị lag 1 ngày thì mất dữ liệu</li>
+                                <li>Retention = không giới hạn trên topic 10GB/day → 3 tháng = 900GB</li>
+                                <li>Broker disk full → Kafka stop accepting writes</li>
+                                <li>High throughput topic mà retention không match</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Tính toán: throughput (GB/day) × expected max lag (days) = min retention</li>
+                                <li>Mặc định: 7 days (1 tuần) là an toàn cho hầu hết use cases</li>
+                                <li>High throughput topic (> 1GB/day): 3-7 days</li>
+                                <li>Low throughput topic (< 100MB/day): 30+ days</li>
+                                <li>Audit logs, compliance data: 1+ năm (lưu trữ riêng)</li>
+                                <li>Monitor disk usage: <span class="highlight">(messages.bytes.total × partition_count) / (1000GB)</span></li>
+                            </ul>
+                            <div class="code-block">
+# Topic config
+retention.ms=604800000  # 7 days
+retention.bytes=-1  # No limit (rely on retention.ms)
+
+# Hoặc
+retention.bytes=107374182400  # 100GB limit
+retention.ms=-1  # No time limit
+
+# Compact topic (keep latest per key)
+cleanup.policy=compact
+min.cleanable.dirty.ratio=0.5
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔑 Key Design Issues</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Quên không đặt Key khiến không đảm bảo được thứ tự tin nhắn</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>producer.send(new ProducerRecord<>(topic, value)) - Key = null</li>
+                                <li>Messages được gửi vào random partitions</li>
+                                <li>Multiple consumers → thứ tự không guaranteed</li>
+                                <li>Cần processing theo thứ tự (VD: user state changes, transactions)</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Luôn set key nếu cần ordering: <span class="highlight">user_id, order_id, account_id</span></li>
+                                <li>Key = null chỉ khi thực sự không cần ordering</li>
+                                <li>Sử dụng idempotent producer (enable.idempotence=true) để tránh duplicate khi retry</li>
+                                <li>Nếu cần strong ordering: số partitions = 1 (trade-off: throughput)</li>
+                                <li>Nếu cần ordering per entity: key = entity_id, multiple partitions OK</li>
+                            </ul>
+                            <div class="code-block">
+# BAD - Key = null
+producer.send(new ProducerRecord<>(topic, value));
+
+# GOOD - Has key
+producer.send(new ProducerRecord<>(topic,
+    userId,  // Key for ordering
+    messageValue));
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4 -->
+            <div class="section" id="section4">
+                <h2>4️⃣ Vấn đề về Operational & Infrastructure</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">💾 Disk Full</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Broker ngừng hoạt động vì hết dung lượng đĩa</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Throughput tăng đột ngột nhưng retention không update</li>
+                                <li>Retention quá dài (VD: 1 năm) mà không dự tính</li>
+                                <li>Log compaction không chạy (compact policy nhưng cleaner thread crash)</li>
+                                <li>Không monitor disk space</li>
+                                <li>Broker quá cũ, disk quá nhỏ</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li><span class="highlight">Ngay lập tức:</span> Tăng retention hoặc xóa topic cũ (backup trước)</li>
+                                <li>Thêm alert: disk > 80% → cảnh báo, disk > 90% → page oncall</li>
+                                <li>Tính toán disk cần: (topic_throughput_GB_per_day × retention_days) × replication_factor × 1.2 (buffer)</li>
+                                <li>Setup cron job để clean up old topics tự động</li>
+                                <li>Nâng cấp disk hardware (AWS EBS, add volume)</li>
+                                <li>Sử dụng tiered storage (hot/cold) nếu available</li>
+                            </ul>
+                            <div class="code-block">
+# Monitoring script
+#!/bin/bash
+USAGE=$(df /var/kafka | awk 'NR==2 {print $5}' | sed 's/%//')
+if [ $USAGE -gt 90 ]; then
+    echo "CRITICAL: Kafka disk $USAGE% full" | mail admin@company.com
+fi
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">📉 In-Sync Replicas (ISR) Shrink</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Danh sách các replica đồng bộ bị thu hẹp, gây rủi ro mất dữ liệu</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Broker bị chậm (GC pause, I/O bottleneck) → không kịp replicate</li>
+                                <li>Network giữa brokers bị chập chờn</li>
+                                <li>replica.lag.time.max.ms quá nhỏ (mặc định 10s)</li>
+                                <li>Leader quá tải, chỉ ghi còn không replicate</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Tăng <span class="highlight">replica.lag.time.max.ms</span> (từ 10s lên 30s)</li>
+                                <li>Check broker CPU/IO → scale up hardware hoặc số broker</li>
+                                <li>Check network bandwidth → upgrade network hoặc move brokers closer</li>
+                                <li>Monitor ISR: khi ISR < min.insync.replicas → alert</li>
+                                <li>Restart replica broker có vấn đề (graceful restart)</li>
+                                <li>Tuning leader: <span class="highlight">num.network.threads</span>, <span class="highlight">num.io.threads</span></li>
+                            </ul>
+                            <div class="code-block">
+# server.properties
+replica.lag.time.max.ms=30000  # 30 seconds
+min.insync.replicas=2
+num.network.threads=8
+num.io.threads=8
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">⚠️ JVM Garbage Collection (GC) Pauses</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Broker bị treo tạm thời do Java dọn dẹp bộ nhớ (GC pause có thể vài giây)</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Broker memory < 2GB (java process phình to)</li>
+                                <li>Tệp log quá lớn (> 1GB) → scan lâu</li>
+                                <li>Sử dụng G1GC hoặc CMS GC (tuning kém)</li>
+                                <li>JVM heap size quá lớn (> 16GB)</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Tuning JVM flags: <span class="highlight">-Xmx8g -Xms8g</span> (8GB for most workloads)</li>
+                                <li>Sử dụng ZGC hoặc Shenandoah GC (low-latency)</li>
+                                <li>Thêm GC logging để debug: <span class="highlight">-Xlog:gc*:file=gc.log</span></li>
+                                <li>Monitor GC pauses: nếu > 1s → tune hoặc scale up</li>
+                                <li>Avoid: heap > 16GB (GC pause tăng exponential)</li>
+                            </ul>
+                            <div class="code-block">
+# kafka-server-start.sh
+export KAFKA_HEAP_OPTS="-Xmx8g -Xms8g"
+export KAFKA_JVM_PERFORMANCE_OPTS="
+  -XX:+UseZGC
+  -XX:ZCollectionInterval=300000
+  -XX:+UnlockDiagnosticVMOptions
+  -XX:ZUncommitDelay=300
+"
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5 -->
+            <div class="section" id="section5">
+                <h2>5️⃣ Vấn đề về Data Integrity & Security</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔐 Unencrypted Traffic</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Dữ liệu nhạy cảm truyền qua mạng mà không có SSL</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Chạy Kafka trên port 9092 (plaintext) mà không SSL</li>
+                                <li>Data contains PII (Personal Identifiable Info): email, phone, SSN</li>
+                                <li>Network environment không secure (Internet, shared data center)</li>
+                                <li>Compliance requirement (GDPR, HIPAA) không thể ignore</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Enable SSL/TLS: cấu hình port 9093 với certificates</li>
+                                <li>Generate certificates: <span class="highlight">openssl</span> hoặc <span class="highlight">keytool</span></li>
+                                <li>Client config: <span class="highlight">security.protocol=SSL</span></li>
+                                <li>Encrypt messages tại application level nếu cần double encryption</li>
+                                <li>Rotate certificates định kỳ (annual minimum)</li>
+                                <li>Monitor certificate expiration: alert 30 days trước hết hạn</li>
+                            </ul>
+                            <div class="code-block">
+# server.properties
+listeners=PLAINTEXT://0.0.0.0:9092,SSL://0.0.0.0:9093
+advertised.listeners=PLAINTEXT://kafka:9092,SSL://kafka:9093
+ssl.keystore.location=/etc/kafka/secrets/kafka.server.keystore.jks
+ssl.keystore.password=your-password
+ssl.key.password=your-password
+
+# client.properties
+security.protocol=SSL
+ssl.truststore.location=/etc/kafka/secrets/kafka.client.truststore.jks
+ssl.truststore.password=your-password
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🚫 Authorization Failure</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Cấu hình ACL sai khiến ứng dụng không đọc/ghi được dữ liệu</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Enable authorization (authorizer.class.name) nhưng quên cấu hình ACL</li>
+                                <li>Cấp quyền sai principal (app-prod vs app-dev)</li>
+                                <li>Topic ACL có principal nhưng consumer group khác</li>
+                                <li>SASL user không được thêm vào ACL</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Kiểm tra ACL: <span class="highlight">kafka-acls --list</span></li>
+                                <li>Cấp quyền: <span class="highlight">kafka-acls --create --topic=my-topic --principal=User:app-name --operation=Read,Write</span></li>
+                                <li>Cho consumer group: <span class="highlight">--operation=Describe --consumer-group=my-group</span></li>
+                                <li>Test authorization với client tương ứng</li>
+                                <li>Document who has what access → prevent misconfig</li>
+                            </ul>
+                            <div class="code-block">
+# Grant read + write to app
+kafka-acls.sh --bootstrap-server localhost:9092 \
+  --add \
+  --allow-principal User:app-prod \
+  --operation Read,Write,Describe \
+  --topic my-topic \
+  --consumer-group my-group
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">📄 Certificate Expiration</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Chứng chỉ SSL hết hạn khiến toàn bộ kết nối bị ngắt</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Certificate issuer date 2 năm trước (mặc định hết hạn sau 2 năm)</li>
+                                <li>Quên renew trước khi hết hạn</li>
+                                <li>Clock skew (server time sai) → certificate bị xem là invalid</li>
+                                <li>Production incident: tất cả client disconnect at once</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li><span class="highlight">URGENT:</span> Renew certificate immediately (keytool hoặc CA)</li>
+                                <li>Setup alert: 30 days trước hết hạn</li>
+                                <li>Restart broker sau khi update certificate</li>
+                                <li>Check clock sync trên toàn bộ servers: <span class="highlight">ntpdate, chronyc</span></li>
+                                <li>Use Let's Encrypt with auto-renewal (90 days, auto-renew at 60 days)</li>
+                                <li>Implement rolling update để avoid downtime</li>
+                            </ul>
+                            <div class="code-block">
+# Check certificate expiry
+keytool -list -v -keystore kafka.server.keystore.jks | grep "Valid from"
+
+# Auto-renewal setup (cron)
+0 0 * * * /opt/certbot/bin/certbot renew --quiet
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 6 -->
+            <div class="section" id="section6">
+                <h2>6️⃣ Vấn đề về Client & App Logic</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">💧 Resource Leak</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Không đóng Kafka Producer/Consumer khi tắt ứng dụng</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Không gọi producer.close() khi app shutdown</li>
+                                <li>Consumer quay lòng nhưng connection vẫn open → zombie connection</li>
+                                <li>File descriptors cạn kiệt (ulimit)</li>
+                                <li>Memory leak → JVM heap size tăng liên tục</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Sử dụng try-with-resources (Java): producer/consumer implement AutoCloseable</li>
+                                <li>Thêm shutdown hook: <span class="highlight">Runtime.getRuntime().addShutdownHook()</span></li>
+                                <li>Set timeout: <span class="highlight">producer.close(30, TimeUnit.SECONDS)</span></li>
+                                <li>Monitor open file descriptors: <span class="highlight">lsof -p [PID]</span></li>
+                                <li>Check ulimit: <span class="highlight">ulimit -n</span> (set to 65536 or higher)</li>
+                            </ul>
+                            <div class="code-block">
+// GOOD - try-with-resources
+try (Producer<String, String> producer =
+     new KafkaProducer<>(props)) {
+    producer.send(...);
+}
+
+// GOOD - shutdown hook
+Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    producer.close(30, TimeUnit.SECONDS);
+}));
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔁 Infinite Retry</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Producer retry gửi tin nhắn lỗi mãi mãi gây nghẽn hàng đợi</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>retries = -1 (infinite) mà broker vẫn reject message</li>
+                                <li>Message > max.message.bytes → broker luôn reject, producer retry vô tận</li>
+                                <li>Network partition kéo dài → producer buffer tính tác</li>
+                                <li>Broker down mà producer không có timeout</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Set <span class="highlight">retries = 3</span> (not -1/infinite)</li>
+                                <li>Set <span class="highlight">request.timeout.ms</span> (mặc định 30s)</li>
+                                <li>Implement callback với error handler, log và alert</li>
+                                <li>Check message size < max.message.bytes trước gửi</li>
+                                <li>Exponential backoff: <span class="highlight">retry.backoff.ms</span></li>
+                                <li>Send to Dead Letter Topic nếu max retries exceeded</li>
+                            </ul>
+                            <div class="code-block">
+// GOOD - retry config
+props.put("retries", 3);
+props.put("request.timeout.ms", 30000);
+props.put("retry.backoff.ms", 100);
+
+// GOOD - error handling
+producer.send(record, (metadata, exception) -> {
+    if (exception != null) {
+        logger.error("Failed to send: {}", exception);
+        // Send to DLQ or alert
+    }
+});
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🧵 Thread Safety</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Dùng một Consumer instance cho nhiều thread (Kafka Consumer không thread-safe)</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Shared consumer across threads → race condition</li>
+                                <li>Thread 1 poll, Thread 2 commit → offset quay lùi</li>
+                                <li>Crash, data loss, hoặc duplicate processing</li>
+                                <li>Rare, non-deterministic → khó debug</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>ONE consumer per thread pool (rule of thumb)</li>
+                                <li>Hoặc: shared consumer nhưng synchronized access (kém performance)</li>
+                                <li>Sử dụng reactive stream (Project Reactor, Akka Streams)</li>
+                                <li>Spring Kafka handler: single-threaded by default (thread-safe)</li>
+                                <li>Code review: kiểm tra consumer usage pattern</li>
+                            </ul>
+                            <div class="code-block">
+// BAD - Shared consumer across threads
+static KafkaConsumer<String, String> sharedConsumer = new KafkaConsumer<>(props);
+// Thread 1 & 2 both poll() → UNSAFE
+
+// GOOD - One consumer per thread
+ExecutorService executor = Executors.newFixedThreadPool(5);
+for (int i = 0; i < 5; i++) {
+    executor.submit(() -> {
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
+        // ...
+    });
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 7 -->
+            <div class="section" id="section7">
+                <h2>7️⃣ Vấn đề về Môi trường Cloud/Kubernetes</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔄 Pod Restart (HPA Continuous Scaling)</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">HPA scale liên tục gây rebalance không ngừng</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>HPA based on CPU/Memory mà threshold quá nhạy cảm</li>
+                                <li>CPU 50% → scale up (add pod) → CPU tuột xuống → scale down → repeat</li>
+                                <li>Mỗi pod add/remove → Kafka rebalance → tất cả consumer stop</li>
+                                <li>Rebalance 30s, processing chậm → CPU cao → scale up lại</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li><span class="highlight">Solution 1 (Recommended):</span> Sử dụng KEDA với consumer lag trigger</li>
+                                <li>KEDA config: scale up khi lag > 10,000 messages (thay vì CPU 50%)</li>
+                                <li>Đảm bảo: maxReplicas = số partitions (không scale vượt quá)</li>
+                                <li><span class="highlight">Solution 2:</span> HPA stabilization window</li>
+                                <li>scaleDownBehavior: stabilization 5 phút trước scale down</li>
+                                <li><span class="highlight">Solution 3:</span> CooperativeStickyAssignor để rebalance nhanh hơn</li>
+                            </ul>
+                            <div class="code-block">
+# KEDA ScaledObject - RECOMMENDED
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kafka-consumer
+spec:
+  scaleTargetRef:
+    name: my-consumer
+  minReplicaCount: 1
+  maxReplicaCount: 20  # = số partition
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: kafka:9092
+      consumerGroup: my-group
+      topic: my-topic
+      lagThreshold: "10000"  # Scale when lag > 10k
+
+---
+# HPA Alternative - SET stabilization
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-consumer-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-consumer
+  minReplicas: 1
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300  # 5 min
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">📡 Advertising IP/Hostname</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Client bên ngoài không kết nối được vì broker báo địa chỉ IP nội bộ</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Kafka in container (K8s): advertised.listeners = pod IP (10.0.0.x)</li>
+                                <li>Client outside cluster → có thể reach port 9092 qua service, nhưng metadata trả về pod IP</li>
+                                <li>Client try connect to pod IP → fail (no route)</li>
+                                <li>Classic K8s issue: không config advertised.listeners đúng</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>For internal clients: advertised.listeners = service hostname:9092</li>
+                                <li>For external clients: advertised.listeners = LoadBalancer IP:port</li>
+                                <li>Sử dụng init container để set advertised listeners động</li>
+                                <li>Hoặc: helm chart pre-configured cho internal/external</li>
+                            </ul>
+                            <div class="code-block">
+# K8s StatefulSet - init container
+initContainers:
+- name: set-advertised-listeners
+  image: kafka:latest
+  command:
+    - sh
+    - -c
+    - |
+      POD_IP=$(hostname -i)
+      sed -i "s/advertised.listeners=.*/advertised.listeners=PLAINTEXT:\/\/$POD_IP:9092/"
+      /etc/kafka/server.properties
+
+# Or pass via env (recommended)
+- name: kafka
+  env:
+  - name: KAFKA_ADVERTISED_LISTENERS
+    value: "PLAINTEXT://kafka-$(POD_ORDINAL).kafka-headless:9092"
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">⚠️ CPU Throttling</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Pod bị giới hạn CPU khiến xử lý Kafka chậm bất thường</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Pod limit CPU = 1 (request = 0.5) → pod throttle từ 50%+ CPU</li>
+                                <li>Broker được share node với pods khác → CPU contention</li>
+                                <li>Không set CPU requests/limits → pod có thể bị evict khi node full</li>
+                                <li>Kafka broker thường cần 2-4 cores</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Set CPU requests = actual need (VD: 2 cores)</li>
+                                <li>Set CPU limits > requests để pod không bị OOMKill (VD: 3 cores)</li>
+                                <li>Sử dụng <span class="highlight">burstable</span> QoS class (request < limit)</li>
+                                <li>Monitor CPU throttling: check cgroup stats</li>
+                                <li>Dedicate nodes cho Kafka (node affinity/taints)</li>
+                                <li>Thêm buffer: limits = requests + 20%</li>
+                            </ul>
+                            <div class="code-block">
+# K8s Pod spec - GOOD
+resources:
+  requests:
+    cpu: "2"        # 2 cores
+    memory: "4Gi"   # 4GB
+  limits:
+    cpu: "3"        # 3 cores (max burst)
+    memory: "6Gi"   # 6GB
+
+# Node affinity - dedicate for Kafka
+nodeSelector:
+  kafka-node: "true"
+tolerations:
+- key: kafka
+  operator: Equal
+  value: "true"
+  effect: NoSchedule
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 8 -->
+            <div class="section" id="section8">
+                <h2>8️⃣ Các vấn đề khác (Advanced)</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">⏰ Clock Skew</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Thời gian giữa các máy chủ không đồng bộ gây lỗi timestamp</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>NTP (Network Time Protocol) không chạy hoặc bị lỗi</li>
+                                <li>Message có timestamp tuân theo machine time → bị lỗi logic</li>
+                                <li>Timestamp checks (TTL, expiration) fail do clock khác nhau</li>
+                                <li>SSL certificate validation fail do server time sai</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Enable NTP daemon: <span class="highlight">systemctl enable ntpd</span></li>
+                                <li>Or use chrony (modern): <span class="highlight">systemctl enable chronyd</span></li>
+                                <li>Verify sync: <span class="highlight">timedatectl status</span> (offset < 100ms)</li>
+                                <li>Setup monitoring: alert if clock drift > 500ms</li>
+                                <li>Use UTC timezone trên tất cả servers</li>
+                            </ul>
+                            <div class="code-block">
+# Check time sync
+timedatectl status
+# or
+ntpstat
+
+# Fix if needed
+chronyc makestep  # Force immediate sync
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔗 Connection Storm</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Hàng nghìn client cùng lúc kết nối lại khi Broker vừa khởi động xong</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Broker khởi động lại (upgrade, crash recovery)</li>
+                                <li>Lúc Broker sẵn sàng, tất cả clients reconnect cùng lúc</li>
+                                <li>Broker bị overwhelm → timeout → clients retry → spiral death</li>
+                                <li>Especially trong K8s khi scaling up pods</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Client-side: thêm random jitter vào reconnect delay</li>
+                                <li>Set <span class="highlight">reconnect.backoff.ms</span> và <span class="highlight">reconnect.backoff.max.ms</span></li>
+                                <li>Broker: tăng <span class="highlight">num.network.threads</span> + <span class="highlight">num.io.threads</span></li>
+                                <li>Rolling restart brokers thay vì restart tất cả cùng lúc</li>
+                                <li>Implement backpressure / rate limiting trên broker metadata requests</li>
+                            </ul>
+                            <div class="code-block">
+# Producer/Consumer config
+reconnect.backoff.ms=50
+reconnect.backoff.max.ms=1000
+
+# Broker config - increase threads
+num.network.threads=8
+num.io.threads=8
+num.replica.fetchers=4
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 9 -->
+            <div class="section" id="section9">
+                <h2>9️⃣ Vấn đề về Cấu hình Log & Storage (Nâng cao)</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">🧹 Log Cleaner Thread chết</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Luồng dọn dẹp log bị crash khiến các topic có tính năng compact phình to vô hạn</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Topic có <span class="highlight">cleanup.policy=compact</span> (ví dụ: changelog topics)</li>
+                                <li>Log cleaner thread crash → không compact được</li>
+                                <li>Disk grows indefinitely → eventually disk full</li>
+                                <li>Thường do out of memory hoặc partition corruption</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Check broker logs: <span class="highlight">grep "log.cleaner" logs/server.log</span></li>
+                                <li>Monitor: <span class="highlight">kafka.log:type=Log,name=CleanerRecycleLatencyMs</span> (JMX)</li>
+                                <li>Restart broker nếu cleaner crashed</li>
+                                <li>Increase broker memory nếu cần more RAM cho cleaner</li>
+                                <li>Tune: <span class="highlight">log.cleaner.threads</span>, <span class="highlight">log.cleaner.buffer.size</span></li>
+                                <li>Manual compact nếu cần urgent: <span class="highlight">kafka-log-dirs</span> tool</li>
+                            </ul>
+                            <div class="code-block">
+# server.properties
+log.cleaner.threads=1
+log.cleaner.buffer.size=536870912  # 512MB
+log.cleaner.dedupe.buffer.size=134217728  # 128MB
+log.cleaner.backoff.ms=15000
+
+# Monitor via JMX
+jconsole kafka:9999  # Check CleanerRecycleLatencyMs
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">📁 Segment File Locking</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Trên Windows hoặc một số hệ thống file, Kafka không thể xóa các file log cũ do bị process khác lock</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Windows filesystem (NTFS) có exclusive file lock</li>
+                                <li>Background process (antivirus, backup) giữ file lock</li>
+                                <li>Kafka không thể delete old segments → disk grows</li>
+                                <li>Rare trên Linux (ext4, xfs), common trên Windows</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>If on Windows: Disable antivirus for Kafka directories</li>
+                                <li>Check for locked files: <span class="highlight">lsof | grep kafka.log</span> (Linux)</li>
+                                <li>Or: <span class="highlight">Handle.exe -a kafka.log</span> (Windows)</li>
+                                <li>Move Kafka to Linux production (avoid Windows)</li>
+                                <li>Use SSD + proper filesystem tuning</li>
+                            </ul>
+                            <div class="code-block">
+# Linux - check lock holders
+lsof +D /var/kafka-logs/ | grep .log
+
+# Windows - list handle
+Handle -a kafka.log
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 10 -->
+            <div class="section" id="section10">
+                <h2>🔟 Vấn đề về Kafka Connect & Ecosystem</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">📤 Dead Letter Queue (DLQ) phình to</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Quên không monitor DLQ của Kafka Connect khiến nó chiếm hết bộ nhớ hoặc đĩa</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Kafka Connect Connector bị lỗi liên tục → send to DLQ</li>
+                                <li>DLQ topic không có retention policy</li>
+                                <li>Unmonitor → DLQ grows to GB hoặc TB</li>
+                                <li>Eventually disk full hoặc memory overload</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Set DLQ retention: <span class="highlight">retention.ms=604800000</span> (7 days)</li>
+                                <li>Setup alert: DLQ lag > 1000 messages</li>
+                                <li>Create monitoring dashboard for DLQ size</li>
+                                <li>Review DLQ periodically → identify root cause</li>
+                                <li>Fix connector or adjust max.retries before DLQ</li>
+                            </ul>
+                            <div class="code-block">
+# Create DLQ topic with retention
+kafka-topics --create --topic my-connector-dlq \
+  --partitions 3 \
+  --replication-factor 3 \
+  --config retention.ms=604800000
+
+# Monitor DLQ
+kafka-consumer-groups --group dlq-monitor \
+  --bootstrap-server kafka:9092 \
+  --describe
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔀 Source Connector Lag</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Connector đọc từ Database (JDBC) không kịp tiến độ thay đổi của DB</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Database có throughput cao nhưng connector chậm</li>
+                                <li>JDBC query block → connector chỉ có thể poll chậm chạp</li>
+                                <li>Query kỳ vọng 100 rows/sec nhưng DB generate 1000 rows/sec</li>
+                                <li>Eventually lag kiếp không kịp theo</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Optimize DB query: index, partition, limit rows returned</li>
+                                <li>Increase <span class="highlight">tasks.max</span> (parallel connectors)</li>
+                                <li>Use CDC (Change Data Capture) mode instead of polling</li>
+                                <li>Upgrade DB → better performance for queries</li>
+                                <li>Add monitoring: track connector lag vs DB change rate</li>
+                            </ul>
+                            <div class="code-block">
+# JDBC Connector - optimize
+"tasks.max": 5,  # More parallel tasks
+"poll.interval.ms": 5000,  # Query every 5s
+"batch.size": 100,  # Batch size per task
+
+# Or use Debezium (CDC) - much better for high throughput
+connector.class=io.debezium.connector.mysql.MySqlConnector
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 11 -->
+            <div class="section" id="section11">
+                <h2>1️⃣1️⃣ Vấn đề về Network & Security (Chuyên sâu)</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">🌐 Wildcard DNS Issues</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Client kết nối nhầm Broker do cấu hình DNS wildcard không chính xác</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>DNS: *.kafka.internal → resolves to single IP</li>
+                                <li>Client connect to kafka-0.kafka.internal → gets wrong Broker</li>
+                                <li>Or: all resolve to load balancer IP → no failover</li>
+                                <li>Result: some brokers never contacted, hotspot on one broker</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Use separate DNS A record per broker (not wildcard)</li>
+                                <li>kafka-0.kafka.internal → 10.0.0.1</li>
+                                <li>kafka-1.kafka.internal → 10.0.0.2</li>
+                                <li>Verify: <span class="highlight">nslookup kafka-0.kafka.internal</span></li>
+                                <li>Use SRV records for service discovery (if supported)</li>
+                                <li>Test client DNS resolution from actual client pod</li>
+                            </ul>
+                            <div class="code-block">
+# Good - individual DNS records
+kafka-0.kafka.internal A 10.0.0.1
+kafka-1.kafka.internal A 10.0.0.2
+kafka-2.kafka.internal A 10.0.0.3
+
+# Verify
+nslookup kafka-0.kafka.internal
+# Should return 10.0.0.1, NOT load balancer IP
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">📡 MTU Mismatch</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Kích thước gói tin mạng (MTU) không đồng bộ giữa Client và Broker gây mất gói tin hoặc chậm trễ</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Client network: MTU = 9000 (jumbo frames)</li>
+                                <li>Broker network: MTU = 1500 (standard)</li>
+                                <li>Packets get fragmented or dropped → TCP retransmit</li>
+                                <li>Result: latency spike, throughput drop 30-40%</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Check MTU: <span class="highlight">ip link show</span> or <span class="highlight">ifconfig</span></li>
+                                <li>Ensure all: Client, Broker, Network = same MTU (1500 is standard)</li>
+                                <li>Or enable jumbo frames everywhere (9000)</li>
+                                <li>Tune batch.size to fit MTU: batch.size < MTU - 50</li>
+                                <li>Monitor: check <span class="highlight">/proc/net/dev</span> for dropped packets</li>
+                            </ul>
+                            <div class="code-block">
+# Check MTU
+ip link show
+# or
+ifconfig eth0
+
+# Set MTU (if needed)
+ip link set dev eth0 mtu 1500
+
+# Tune Kafka batch for 1500 MTU
+batch.size=1400  # Leave room for headers
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 12 -->
+            <div class="section" id="section12">
+                <h2>1️⃣2️⃣ Vấn đề về Quản trị & Con người (Operations)</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">📊 Lack of Monitoring/Alerting</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Hệ thống chạy nhưng không có cảnh báo khi Consumer Lag tăng vọt</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Kafka cluster chạy mà không có monitoring setup</li>
+                                <li>Consumer lag tăng từ 100 → 100,000 trong 5 phút, không ai biết</li>
+                                <li>Broker disk full → chỉ phát hiện khi service down</li>
+                                <li>Silent failures → data loss không được phát hiện kịp thời</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Setup Prometheus + JMX exporter để collect Kafka metrics</li>
+                                <li>Key metrics: consumer lag, broker CPU/IO/disk, replication lag</li>
+                                <li>Setup Grafana dashboards for visualization</li>
+                                <li>Setup AlertManager rules:
+                                    <ul style="margin-top: 5px;">
+                                        <li>Consumer lag > 10k messages (warning), > 100k (critical)</li>
+                                        <li>Disk > 80% (warning), > 90% (critical)</li>
+                                        <li>Broker down → page oncall immediately</li>
+                                    </ul>
+                                </li>
+                                <li>Integrate with PagerDuty / Slack for alerts</li>
+                            </ul>
+                            <div class="code-block">
+# Prometheus alert rule example
+- alert: KafkaConsumerLagHigh
+  expr: kafka_consumergroup_lag > 100000
+  for: 5m
+  annotations:
+    summary: "Consumer lag is high: {{ $value }}"
+
+- alert: KafkaDiskUsageHigh
+  expr: kafka_broker_disk_used_percent > 90
+  for: 5m
+  annotations:
+    summary: "Kafka disk usage is critical: {{ $value }}%"
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">⚠️ Version Mismatch (Client/Server)</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Dùng Client thư viện quá cũ không hỗ trợ các tính năng mới của Broker</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Broker = 3.0 (latest), Client = 0.10 (5 năm tuổi)</li>
+                                <li>Broker support transactions, client không → compatibility issue</li>
+                                <li>Or: broker dropped support for old API version → client error</li>
+                                <li>Rare lỗi không dễ debug</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Upgrade client library to match broker version</li>
+                                <li>Rule: client version ≥ broker version - 2 (for compatibility)</li>
+                                <li>Check: <span class="highlight">kafka-console-producer --version</span></li>
+                                <li>Test before rolling out to production</li>
+                                <li>Document supported version matrix in runbook</li>
+                            </ul>
+                            <div class="code-block">
+# Check version
+kafka-console-producer --version
+# org.apache.kafka.tools.JmxTool 2.8.0
+
+# Recommended: Keep within 2 major versions
+Broker 3.0 → Support clients 2.x, 3.x (1.x may fail)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 13 -->
+            <div class="section" id="section13">
+                <h2>1️⃣3️⃣ Các lỗi "Góc khuất" (Edge Cases)</h2>
+
+                <div class="problem-item">
+                    <div class="problem-title">⚠️ Leader Not Available</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Toàn bộ Replica của một partition đều bị văng khỏi ISR, không ai có thể làm Leader</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Partition replicas = 3, tất cả 3 brokers crash cùng lúc</li>
+                                <li>ISR shrink → eventually ISR = empty → no leader</li>
+                                <li>Network partition: replicas bị isolated → all out-of-sync</li>
+                                <li>Result: partition unavailable, producer/consumer blocked</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Check broker status: which brokers are down?</li>
+                                <li>Restart crashed brokers ASAP</li>
+                                <li>If taking too long, use <span class="highlight">unclean.leader.election.enable=true</span> (risky - may lose data)</li>
+                                <li>Better: set <span class="highlight">min.insync.replicas=2</span> + replication.factor=3 to prevent</li>
+                                <li>Prevent by: proper monitoring + alerting on ISR shrink</li>
+                            </ul>
+                            <div class="code-block">
+# Emergency - enable unclean leader election (loses data)
+kafka-configs --entity-type brokers --entity-name 0 \
+  --alter --add-config unclean.leader.election.enable=true
+
+# Better - broker config to prevent
+unclean.leader.election.enable=false  # Default
+min.insync.replicas=2
+
+# Monitor ISR
+kafka-topics --describe --topic my-topic \
+  --bootstrap-server kafka:9092
+# Check Isr column - should have >= 2 replicas
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">💾 Producer Buffer Exhaustion</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Bộ nhớ đệm của Producer bị đầy khiến ứng dụng bị treo (block) khi gọi hàm send()</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Producer gửi messages rất nhanh nhưng broker chậm (full load)</li>
+                                <li>buffer.memory = 32MB (default) → fill up trong vài giây</li>
+                                <li>producer.send() call bị block cho đến khi buffer có space</li>
+                                <li>Application thread stuck → làm chậm toàn hệ thống</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Increase <span class="highlight">buffer.memory</span> (từ 32MB → 128MB hoặc 256MB)</li>
+                                <li>Implement async sending (not blocking)</li>
+                                <li>Add backpressure: pause input if buffer > 80%</li>
+                                <li>Scale broker: add more brokers → faster throughput</li>
+                                <li>Monitor: track buffer utilization, alert if > 80%</li>
+                            </ul>
+                            <div class="code-block">
+# Increase buffer
+buffer.memory=268435456  # 256MB (from default 32MB)
+
+# Or: async pattern - don't block
+producer.send(record, (metadata, ex) -> {
+    if (ex != null) handleError();
+});
+// Don't wait for send to complete
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-item">
+                    <div class="problem-title">🔄 Graceful Shutdown Failure</div>
+                    <div class="problem-detail">
+                        <div class="detail-section">
+                            <span class="detail-label">Vấn đề:</span>
+                            <span class="detail-content">Broker bị tắt cưỡng bức (kill -9) khiến việc khôi phục log khi khởi động lại mất hàng giờ đồng hồ</span>
+                        </div>
+                        <div class="when-happen">
+                            <strong>⏰ Khi nào xảy ra:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Broker bị hang → admin chạy kill -9 thay vì graceful shutdown</li>
+                                <li>Broker restart → recovery process cần rebuild indices</li>
+                                <li>1TB log → có thể mất 30 phút - 2 giờ để recovery</li>
+                                <li>During recovery: broker không available → producer/consumer failed</li>
+                            </ul>
+                        </div>
+                        <div class="solution">
+                            <strong>✅ Cách giải quyết:</strong>
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li>Always use graceful shutdown: <span class="highlight">kafka-server-stop.sh</span> (not kill -9)</li>
+                                <li>Graceful shutdown: controller notified → leadership transferred → client redirected</li>
+                                <li>Set timeout: <span class="highlight">controlled.shutdown.max.retries=3</span></li>
+                                <li>If needed kill -9: accept recovery time as cost</li>
+                                <li>Use rolling restart (one broker at a time) for maintenance</li>
+                            </ul>
+                            <div class="code-block">
+# Graceful shutdown
+kafka-server-stop.sh
+# Waits for leader tasks to finish, transfers leadership
+
+# Forced stop (last resort)
+kill -9 [PID]  # Will trigger recovery on restart
+
+# Rolling restart script
+for broker in 0 1 2; do
+    kafka-server-stop.sh
+    sleep 30  # Wait for leadership transfer
+    kafka-server-start.sh  # Start
+    sleep 120  # Wait to catch up
+done
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin-top: 40px;">
+                <h3 style="color: #667eea; margin-bottom: 10px;">📌 Key Recommendations</h3>
+                <ul style="color: #555; line-height: 2;">
+                    <li>✅ Monitor consumer lag liên tục bằng KEDA hoặc Prometheus</li>
+                    <li>✅ Sử dụng CooperativeStickyAssignor để giảm rebalance</li>
+                    <li>✅ Cấu hình certificate renewal tự động</li>
+                    <li>✅ Đặt alert cho disk space, ISR, broker down</li>
+                    <li>✅ Test data loss scenarios (broker down, network partition)</li>
+                    <li>✅ Chọn retention policy phù hợp với use case</li>
+                    <li>✅ Tune JVM heap & GC cho low-latency</li>
+                    <li>✅ Setup proper logging & metrics collection</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>Generated on 2026-04-25 | Kafka Issues & Solutions Handbook</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">For more information, refer to official Kafka documentation and your team's runbooks</p>
+        </footer>
+    </div>
+</body>
+</html>

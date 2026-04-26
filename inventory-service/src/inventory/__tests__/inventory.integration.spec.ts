@@ -7,7 +7,7 @@ import request from 'supertest';
 import { InventoryController } from '../inventory.controller';
 import { SeatLockerService } from '../seat-locker.service';
 import { Seat } from '../entities/seat.entity';
-import { KafkaProducer } from '../../clients/kafka.client';
+import { KafkaProducer } from 'kafka-rdkafka';
 import { SeatAvailabilityPublisherService } from '../seat-availability-publisher.service';
 import { SharedSeatAvailabilityRedisService } from '../shared-seat-availability-redis.service';
 

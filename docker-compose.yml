@@ -104,7 +104,9 @@ services:
 
   # ─── Microservices ────────────────────────────────────────────────
   booking-service:
-    build: ./booking-service
+    build:
+      context: .
+      dockerfile: booking-service/Dockerfile
     ports:
       - "3001:3001"
     environment:
@@ -130,7 +132,9 @@ services:
     restart: on-failure
 
   inventory-service:
-    build: ./inventory-service
+    build:
+      context: .
+      dockerfile: inventory-service/Dockerfile
     ports:
       - "3002:3002"
     environment:
@@ -155,7 +159,9 @@ services:
     restart: on-failure
 
   search-service:
-    build: ./search-service
+    build:
+      context: .
+      dockerfile: search-service/Dockerfile
     ports:
       - "3003:3003"
     environment:
@@ -176,7 +182,9 @@ services:
     restart: on-failure
 
   pricing-service:
-    build: ./pricing-service
+    build:
+      context: .
+      dockerfile: pricing-service/Dockerfile
     ports:
       - "3004:3004"
     environment:
@@ -198,7 +206,9 @@ services:
     restart: on-failure
 
   notification-service:
-    build: ./notification-service
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
     ports:
       - "3005:3005"
     environment:

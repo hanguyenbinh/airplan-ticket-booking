@@ -20,4 +20,3 @@ RUN cd notification-service && npm install --omit=dev
 COPY --from=builder /app/notification-service/dist ./notification-service/dist
 EXPOSE 3005
 CMD ["node", "notification-service/dist/main"]
-

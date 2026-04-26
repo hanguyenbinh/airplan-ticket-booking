@@ -18,11 +18,11 @@ echo ""
 
 # ─── 1. Build Docker images ───────────────────────────────────────
 echo "📦 Building Docker images..."
-docker build -t airline/booking-service:latest   ./booking-service   --quiet
-docker build -t airline/inventory-service:latest ./inventory-service --quiet
-docker build -t airline/search-service:latest    ./search-service    --quiet
-docker build -t airline/pricing-service:latest   ./pricing-service   --quiet
-docker build -t airline/notification-service:latest ./notification-service --quiet
+docker build -f ./booking-service/Dockerfile  -t airline/booking-service:latest . --quiet
+docker build -f ./inventory-service/Dockerfile  -t airline/inventory-service:latest . --quiet
+docker build -f ./search-service/Dockerfile  -t airline/search-service:latest . --quiet
+docker build -f ./pricing-service/Dockerfile  -t airline/pricing-service:latest . --quiet
+docker build -f ./notification-service/Dockerfile -t airline/notification-service:latest . --quiet
 echo "✅ Images built"
 
 # ─── 2. Load vào minikube nếu cần ────────────────────────────────

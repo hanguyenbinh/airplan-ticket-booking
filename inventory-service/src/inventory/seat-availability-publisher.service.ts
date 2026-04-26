@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Seat } from './entities/seat.entity';
-import { KafkaProducer } from '../clients/kafka.client';
+import { KafkaProducer } from 'kafka-rdkafka';
 import { SharedSeatAvailabilityRedisService } from './shared-seat-availability-redis.service';
 
 /**

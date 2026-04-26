@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { AvailableSeatsCacheService } from './available-seats-cache.service';
-import { KafkaProducer } from '../clients/kafka.client';
+import { KafkaProducer } from 'kafka-rdkafka';
 
 const LOCK_TTL_SECONDS = 600;
 

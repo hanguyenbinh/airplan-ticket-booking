@@ -94,6 +94,11 @@ curl -X POST http://airline.local/api/bookings \
   -d '{"flightId":"uuid","seatNo":"12A","passengerName":"Nguyen Van A","totalAmount":850000}'
 ```
 
+Reset:
+curl -X POST http://airline.local/api/inventory/flights/seats/reset \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
 #### Rebuild & redeploy (Kubernetes)
 
 Images use tag `:latest` với `imagePullPolicy: Never` trên Docker Desktop — sau khi **build lại image trên cùng máy**, phải **restart deployment** thì pod mới chạy code mới.
@@ -102,11 +107,11 @@ Images use tag `:latest` với `imagePullPolicy: Never` trên Docker Desktop —
 
 ```bash
 # 1) Build lại image (chỉ service bạn đổi, hoặc cả năm)
-docker build -t airline/booking-service:latest      ./booking-service
-docker build -t airline/inventory-service:latest    ./inventory-service
-docker build -t airline/search-service:latest       ./search-service
-docker build -t airline/pricing-service:latest      ./pricing-service
-docker build -t airline/notification-service:latest ./notification-service
+docker build -f ./booking-service/Dockerfile  -t airline/booking-service:latest .
+docker build -f ./inventory-service/Dockerfile  -t airline/inventory-service:latest .
+docker build -f ./search-service/Dockerfile  -t airline/search-service:latest .
+docker build -f ./pricing-service/Dockerfile  -t airline/pricing-service:latest .
+docker build -f ./notification-service/Dockerfile -t airline/notification-service:latest . 
 
 # 2) Rolling restart để pod dùng image mới + env ConfigMap mới
 kubectl rollout restart deployment/booking-service deployment/inventory-service \

@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BookingSaga } from '../saga/booking.saga';
 import { Booking } from '../entities/booking.entity';
-import { KafkaProducer } from '../../clients/kafka.client';
+import { KafkaProducer } from 'kafka-rdkafka';
 import { AvailableSeatsCacheService } from '../available-seats-cache.service';
 
 /**
